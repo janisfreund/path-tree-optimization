@@ -1,0 +1,42 @@
+language: cpp
+
+matrix:
+  include:
+  - os: linux
+    dist: bionic
+    compiler: gcc
+    addons:
+      apt:
+        packages:
+        - freeglut3-dev
+        - libassimp-dev
+        - libboost-filesystem-dev
+        - libboost-program-options-dev
+        - libboost-serialization-dev
+        - libboost-system-dev
+        - libboost-test-dev
+        - libccd-dev
+        - libeigen3-dev
+        - libfcl-dev
+        - libflann-dev
+        - libode-dev
+        - ninja-build
+  - os: osx
+    osx_image: xcode10.3
+    compiler: clang
+    addons:
+      homebrew:
+        packages:
+        - assimp
+        - eigen
+        - fcl
+        - flann
+        - ninja
+        update: true
+
+script:
+  - mkdir -p build
+  - cd build
+  - cmake -G Ninja -DOMPL_REGISTRATION=OFF ..
+  - cmake --build .
+  - ctest
