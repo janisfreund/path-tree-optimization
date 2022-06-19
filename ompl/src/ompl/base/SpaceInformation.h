@@ -196,12 +196,8 @@ namespace ompl
 
             void setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc);
 
-            void addObject(std::vector<double> pos, std::vector<double> len) {
-                objects_.push_back(POObject(pos, len));
-            }
-
-            void initWorld() {
-                world_ = new World(objects_);
+            void initWorld(int numObjects) {
+                world_ = new World(numObjects);
             }
 
             World* getWorld() {
@@ -513,7 +509,6 @@ namespace ompl
             ParamSet params_;
 
             //partial
-            std::vector<POObject> objects_;
             World* world_;
         };
     }

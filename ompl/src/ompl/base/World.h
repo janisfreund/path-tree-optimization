@@ -60,20 +60,16 @@ namespace ompl
         public:
             World() {}
 
-            World(std::vector<POObject> objects) {
-                objects_ = objects;
+            World(int numObjects) {
+                numObjects_ = numObjects;
 
                 /// fill worldStates with all possible combinations
-                generateCombinations(std::vector<ObjectState>{}, static_cast<int>(objects_.size()), 0);
+                generateCombinations(std::vector<ObjectState>{}, numObjects, 0);
 
                 // targetFound_ = targetFound;
             }
 
             virtual ~World() = default;
-
-            std::vector<POObject> getPOObjects() {
-                return objects_;
-            }
 
             std::vector<std::vector<ObjectState>> getWorldStates() {
                 return worldStates_;
@@ -84,7 +80,7 @@ namespace ompl
             }
 
             int getNumObjects() {
-                return static_cast<int>(objects_.size());
+                return numObjects_;
             }
 
             void setState(std::vector<ObjectState> objectStates) {
@@ -124,7 +120,7 @@ namespace ompl
                 }
             }
 
-            std::vector<POObject> objects_;
+            int numObjects_;
             std::vector<ObjectState> objectStates_;
             std::vector<std::vector<ObjectState>> worldStates_;
             // std::function<bool(const State *state)> targetFound_;
