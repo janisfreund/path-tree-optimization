@@ -95,6 +95,14 @@ namespace ompl
                 return objectStates_;
             }
 
+            std::vector<int> getStateInt() {
+                std::vector<int> intStates;
+                for (ObjectState objectState : objectStates_) {
+                    intStates.push_back(static_cast<int>(objectState));
+                }
+                return intStates;
+            }
+
 //            std::vector<float> observe(std::vector<float> beliefs, State *state) {
 //                // TODO hardcoded for 1-object example
 //                bool found = targetFound_(state);

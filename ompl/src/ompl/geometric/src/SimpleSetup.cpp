@@ -211,6 +211,17 @@ ompl::geometric::PathGeometric &ompl::geometric::SimpleSetup::getSolutionPath() 
     throw Exception("No solution path");
 }
 
+ompl::geometric::PathGeometric &ompl::geometric::SimpleSetup::getIdxSolutionPath(int i) const
+{
+    if (pdef_)
+    {
+        const base::PathPtr &p = pdef_->getIdxSolutionPath(i);
+        if (p)
+            return static_cast<PathGeometric &>(*p);
+    }
+    throw Exception("No solution path");
+}
+
 void ompl::geometric::SimpleSetup::getPlannerData(base::PlannerData &pd) const
 {
     pd.clear();

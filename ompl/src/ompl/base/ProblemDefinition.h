@@ -362,6 +362,8 @@ namespace ompl
                 This will need to be casted into the specialization computed by the planner */
             PathPtr getSolutionPath() const;
 
+            PathPtr getIdxSolutionPath(int i) const;
+
             /** \brief Return true if a top solution is found, with the top solution passed by reference in the function
                header
                  The top path is the shortest one that was found, preference being given to solutions that are not

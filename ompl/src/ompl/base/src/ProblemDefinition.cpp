@@ -115,6 +115,15 @@ namespace ompl
                 return copy;
             }
 
+            PathPtr getIdxSolution(int i)
+            {
+                std::lock_guard<std::mutex> slock(lock_);
+                PathPtr copy;
+                if (!solutions_.empty())
+                    copy = solutions_[i].path_;
+                return copy;
+            }
+
             bool getTopSolution(PlannerSolution &solution)
             {
                 std::lock_guard<std::mutex> slock(lock_);
@@ -414,6 +423,11 @@ std::size_t ompl::base::ProblemDefinition::getSolutionCount() const
 ompl::base::PathPtr ompl::base::ProblemDefinition::getSolutionPath() const
 {
     return solutions_->getTopSolution();
+}
+
+ompl::base::PathPtr ompl::base::ProblemDefinition::getIdxSolutionPath(int i) const
+{
+    return solutions_->getIdxSolution(i);
 }
 
 bool ompl::base::ProblemDefinition::getSolution(PlannerSolution &solution) const
