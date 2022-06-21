@@ -128,8 +128,7 @@ void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateV
             return true;
         }
 
-        //change int to *cv::Mat
-        bool targetFound(const State *state) const override
+        std::vector<int> targetFound(const State *state) const override
         {
             return tc_(state);
         }

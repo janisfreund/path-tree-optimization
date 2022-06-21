@@ -91,8 +91,8 @@ public:
         return true;
     }
 
-    static bool targetFound(const ob::State *state) {
-        return false;
+    static std::vector<int> targetFound(const ob::State *state) {
+        return std::vector<int>{};
     }
 
     void plan() {

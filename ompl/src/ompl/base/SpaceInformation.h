@@ -80,7 +80,7 @@ namespace ompl
         //partial
         using StateValidityWorldCheckerFn = std::function<bool(const State *, World)>;
         //change int to *cv::Mat
-        using TargetCheckerFn = std::function<bool(const State *)>;
+        using TargetCheckerFn = std::function<std::vector<int>(const State *)>;
 
         /** \brief The base class for space information. This contains
             all the information about the space planning is done in.
@@ -117,13 +117,13 @@ namespace ompl
                 return stateValidityAndTargetChecker_->isValid(state, world);
             }
 
-            bool targetFound(const State *state) const
+            std::vector<int> targetFound(const State *state) const
             {
                 if (stateValidityAndTargetChecker_) {
                     return stateValidityAndTargetChecker_->targetFound(state);
                 }
                 else {
-                    return false;
+                    return std::vector<int>{};
                 }
             }
 

@@ -91,6 +91,11 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
             // check if motion is valid
             if (si_->checkMotionWorlds(nmotion->state, dstate)) {
+                // check which objects are visible from sampled state
+                for (int objectIdx : si_->targetFound(dstate)) {
+                    std::cout << "Object " << objectIdx << " is visible from current state.";
+                }
+
                 // add motion to nn
                 auto *motion = new Motion(si_);
                 si_->copyState(motion->state, dstate);

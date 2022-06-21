@@ -146,14 +146,6 @@ bool ompl::base::DiscreteMotionValidator::checkMotion(const State *s1, const Sta
 
 bool ompl::base::DiscreteMotionValidator::checkMotion(const State *s1, const State *s2, World world) const
 {
-    std::vector<int> validWorlds;
-    if (si_->targetFound(s1)) {
-        std::cout << "Target found\n";
-    }
-    else {
-        std::cout << "Target not found\n";
-    }
-
 //    std::vector<std::vector<ObjectState>> worldStates = world.getWorldStates();
 //    for (int i = 0; i < static_cast<int>(worldStates.size()); i++) {
 //

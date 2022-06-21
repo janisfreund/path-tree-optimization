@@ -391,7 +391,7 @@ class ompl_base_generator_t(code_generator_t):
         # TODO seperate function without world
         self.add_function_wrapper('bool(const ompl::base::State*, ompl::base::World)', \
             'StateValidityCheckerFn', 'State validity checker function')
-        self.add_function_wrapper('bool(const ompl::base::State*)', \
+        self.add_function_wrapper('std::vector<int>(const ompl::base::State*)', \
             'TargetCheckerFn', 'Target checker function')
         self.add_function_wrapper('ompl::base::StateSamplerPtr(const ompl::base::StateSpace*)', \
             'StateSamplerAllocator', 'State sampler allocator')
