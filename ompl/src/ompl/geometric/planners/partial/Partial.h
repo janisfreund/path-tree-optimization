@@ -75,6 +75,8 @@ namespace ompl
 
                 /** \brief The parent motion in the exploration tree */
                 Motion *parent{nullptr};
+
+                std::set<int> beliefs;
             };
 
             /** \brief Compute distance between motions (actually distance between contained states) */

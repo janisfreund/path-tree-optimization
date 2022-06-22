@@ -92,7 +92,7 @@ public:
     }
 
     static std::vector<int> targetFound(const ob::State *state) {
-        return std::vector<int>{};
+        return std::vector<int>{0};
     }
 
     void plan() {

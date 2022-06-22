@@ -91,15 +91,26 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
             // check if motion is valid
             if (si_->checkMotionWorlds(nmotion->state, dstate)) {
-                // check which objects are visible from sampled state
-                for (int objectIdx : si_->targetFound(dstate)) {
-                    std::cout << "Object " << objectIdx << " is visible from current state.";
-                }
-
-                // add motion to nn
+                                // add motion to nn
                 auto *motion = new Motion(si_);
                 si_->copyState(motion->state, dstate);
                 motion->parent = nmotion;
+
+                // the current world is always a possible belief for this state
+                motion->beliefs.insert(worldIdx);
+
+                std::vector<int> currWorldState = world->getStateInt();
+                // check which objects are visible from sampled state
+                for (int objectIdx : si_->targetFound(dstate)) {
+                    std::cout << "Object " << objectIdx << " is visible from current state." << std::endl;
+                    int prevValue = currWorldState.at(objectIdx);
+                    std::vector<int> newWorldState = currWorldState;
+                    newWorldState.at(objectIdx) = abs(prevValue - 1);
+                    int newWorldIdx = world->getStateIdx(newWorldState);
+                    motion->beliefs.insert(newWorldIdx);
+                    std::cout << "New connection between worlds " << worldIdx << " and " << newWorldIdx << std::endl;
+                }
+
                 nn_.at(worldIdx)->add(motion);
 
                 const auto* state3D =

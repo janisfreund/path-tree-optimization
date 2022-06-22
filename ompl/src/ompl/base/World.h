@@ -103,6 +103,23 @@ namespace ompl
                 return intStates;
             }
 
+            // TODO
+            int getStateIdx(std::vector<int> worldState) {
+                int idx = 0;
+                for (std::vector<ObjectState> state : worldStates_) {
+                    bool found = true;
+                    for (int i = 0; i < static_cast<int>(worldState.size()); i++) {
+                        if (worldState.at(i) != static_cast<int>(state.at(i))) {
+                            found = false;
+                        }
+                    }
+                    if (found == true) {
+                        return idx;
+                    }
+                    idx++;
+                }
+            }
+
 //            std::vector<float> observe(std::vector<float> beliefs, State *state) {
 //                // TODO hardcoded for 1-object example
 //                bool found = targetFound_(state);
