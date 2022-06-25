@@ -232,10 +232,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     // add edges between worlds to belief graph
     for (std::pair<std::pair<int, int>, int> ebw : edgesBetweenWorlds) {
-        std::pair<EdgeTrait , bool> p = add_edge(beliefGraphVertices[ebw.first.first].at(ebw.second), beliefGraphVertices[ebw.first.second].at(ebw.second), beliefGraph);
-        EdgeTrait e = p.first;
-        beliefGraph[e].isWorldConnection = true;
-        beliefGraph[e].color = "red";
+        // check if a connection between the worlds is possible
+        if (static_cast<int>(beliefGraphVertices[ebw.first.first].size()) >= ebw.second && static_cast<int>(beliefGraphVertices[ebw.first.second].size()) >= ebw.second) {
+            std::pair<EdgeTrait , bool> p = add_edge(beliefGraphVertices[ebw.first.first].at(ebw.second), beliefGraphVertices[ebw.first.second].at(ebw.second), beliefGraph);
+            EdgeTrait e = p.first;
+            beliefGraph[e].isWorldConnection = true;
+            beliefGraph[e].color = "red";
+        }
     }
 
     // save colroed graph png
@@ -246,6 +249,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     dp.property("color", get(&VertexStruct::color, beliefGraph));
     boost::write_graphviz_dp(colored_dot_file, beliefGraph, dp);
     system("neato -T png colored_grid.dot -o colored_grid.png");
+
+    std::cout << "Graph saved." << std::endl;
 
     // When a solution path is computed, save it here
     std::vector<int> worldsSolved;
