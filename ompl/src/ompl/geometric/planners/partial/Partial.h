@@ -13,6 +13,9 @@
 #include "ompl/datastructures/NearestNeighbors.h"
 #include "ompl/geometric/planners/PlannerIncludes.h"
 //#include "ompl/base/World.h"
+#include "boost/graph/graph_traits.hpp"
+#include "boost/graph/adjacency_list.hpp"
+#include <boost/graph/graphviz.hpp>
 
 namespace ompl
 {
@@ -75,6 +78,8 @@ namespace ompl
 
                 /** \brief The parent motion in the exploration tree */
                 Motion *parent{nullptr};
+
+                int idx;
 
                 std::set<int> beliefs;
             };
