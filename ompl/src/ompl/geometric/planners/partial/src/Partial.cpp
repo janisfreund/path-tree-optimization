@@ -38,6 +38,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     {
         base::State* state;
         std::string color;
+        std::string pos;
     };
 
     struct EdgeStruct
@@ -70,6 +71,11 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             VertexTrait v = add_vertex(beliefGraph);
             beliefGraph[v].state = motion->state;
             beliefGraph[v].color = colors[i % static_cast<int>(colors.size())];
+            // TODO get bounds and use them for pos calculation
+            double x = static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[0] * 10;
+            double y = (static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[1] * 10) + (20 * i);
+            std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
+            beliefGraph[v].pos = pos_str;
             beliefGraphVertices[i].push_back(v);
         }
     }
@@ -166,6 +172,11 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 VertexTrait v = add_vertex(beliefGraph);
                 beliefGraph[v].state = motion->state;
                 beliefGraph[v].color = colors[worldIdx % static_cast<int>(colors.size())];
+                double x = static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[0] * 10;
+                double y = (static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[1] * 10) + (20 * worldIdx);
+                std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
+                beliefGraph[v].pos = pos_str;
+
                 beliefGraphVertices[worldIdx].push_back(v);
 
                 std::pair<EdgeTrait , bool> p = add_edge(beliefGraphVertices[worldIdx].at(motion->idx), beliefGraphVertices[worldIdx].at(motion->parent->idx), beliefGraph);
@@ -241,13 +252,24 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
     }
 
-    // save colroed graph png
-    std::ofstream colored_dot_file("colored_grid.dot");
+    std::cout << "There are max " << static_cast<int>(edgesBetweenWorlds.size()) << " edges between worlds." << std::endl;
+
+    // save colored graph png
+    std::ofstream colored_pos_dot_file("colored_grid_pos.dot");
     boost::dynamic_properties dp;
     dp.property("node_id",   get(boost::vertex_index, beliefGraph));
     dp.property("color", get(&EdgeStruct::color, beliefGraph));
     dp.property("color", get(&VertexStruct::color, beliefGraph));
-    boost::write_graphviz_dp(colored_dot_file, beliefGraph, dp);
+    dp.property("pos", get(&VertexStruct::pos, beliefGraph));
+    boost::write_graphviz_dp(colored_pos_dot_file, beliefGraph, dp);
+    system("neato -T png colored_grid_pos.dot -o colored_grid_pos.png");
+
+    std::ofstream colored_dot_file("colored_grid.dot");
+    boost::dynamic_properties dp_no_pos;
+    dp_no_pos.property("node_id",   get(boost::vertex_index, beliefGraph));
+    dp_no_pos.property("color", get(&EdgeStruct::color, beliefGraph));
+    dp_no_pos.property("color", get(&VertexStruct::color, beliefGraph));
+    boost::write_graphviz_dp(colored_dot_file, beliefGraph, dp_no_pos);
     system("neato -T png colored_grid.dot -o colored_grid.png");
 
     std::cout << "Graph saved." << std::endl;
