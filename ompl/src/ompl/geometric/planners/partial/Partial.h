@@ -81,7 +81,7 @@ namespace ompl
 
                 int idx;
 
-                std::set<int> beliefs;
+                std::vector<float> beliefs;
             };
 
             /** \brief Compute distance between motions (actually distance between contained states) */
@@ -89,6 +89,26 @@ namespace ompl
             {
                 return si_->distance(a->state, b->state);
             }
+
+            struct VertexStruct
+            {
+                base::State* state;
+                std::string color;
+                std::string fontcolor;
+                std::string pos;
+            };
+
+            struct EdgeStruct
+            {
+                bool isWorldConnection;
+                std::string color;
+            };
+
+            typedef boost::adjacency_list< boost::listS, boost::vecS, boost::undirectedS, VertexStruct, EdgeStruct > BeliefGraph;
+            typedef boost::graph_traits<BeliefGraph>::vertex_descriptor VertexTrait;
+            typedef boost::graph_traits<BeliefGraph>::edge_descriptor EdgeTrait;
+
+            void constructPathTree(BeliefGraph pathTree, BeliefGraph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
 
             /** \brief State sampler */
             base::StateSamplerPtr sampler_;
