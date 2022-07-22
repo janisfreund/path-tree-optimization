@@ -79,9 +79,8 @@ namespace ompl
                 /** \brief The parent motion in the exploration tree */
                 Motion *parent{nullptr};
 
-                int idx;
-
-                std::vector<float> beliefs;
+                /** \brief Stores to which node of the random graph this motion corresponds */
+                int nodeIdx;
             };
 
             /** \brief Compute distance between motions (actually distance between contained states) */
@@ -92,23 +91,29 @@ namespace ompl
 
             struct VertexStruct
             {
-                base::State* state;
+                base::State *state{nullptr};
                 std::string color;
                 std::string fontcolor;
                 std::string pos;
+                std::vector<int> observableObjects;
+                std::vector<float> beliefState;
+                std::vector<int> beliefChildren;
             };
 
             struct EdgeStruct
             {
                 bool isWorldConnection;
                 std::string color;
+                std::vector<int> worldValidities;
             };
 
-            typedef boost::adjacency_list< boost::listS, boost::vecS, boost::undirectedS, VertexStruct, EdgeStruct > BeliefGraph;
-            typedef boost::graph_traits<BeliefGraph>::vertex_descriptor VertexTrait;
-            typedef boost::graph_traits<BeliefGraph>::edge_descriptor EdgeTrait;
+            typedef boost::adjacency_list< boost::listS, boost::vecS, boost::undirectedS, VertexStruct, EdgeStruct > Graph;
+            typedef boost::graph_traits<Graph>::vertex_descriptor VertexTrait;
+            typedef boost::graph_traits<Graph>::edge_descriptor EdgeTrait;
 
-            void constructPathTree(BeliefGraph pathTree, BeliefGraph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
+            void constructPathTree(Graph pathTree, Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
+
+            void saveGraph(Graph g, std::string name);
 
             /** \brief State sampler */
             base::StateSamplerPtr sampler_;

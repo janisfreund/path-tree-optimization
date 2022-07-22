@@ -32,77 +32,61 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     if (!sampler_)
         sampler_ = si_->allocStateSampler();
 
-    int numWorldStates = si_->getWorld()->getNumWorldStates();
+    ompl::base::World *world = si_->getWorld();
+    int numWorldStates = world->getNumWorldStates();
 
     std::vector<std::string> colors = {"aquamarine", "blue", "coral", "cyan", "darkred", "gold", "lime", "webpurple"};
 
-    // create belief graph
-    BeliefGraph beliefGraph;
-    std::vector<VertexTrait> beliefGraphVertices[numWorldStates];
-    std::vector<VertexTrait> allBeliefGraphVertices;
+    // create random graph
+    Graph randomGraph;
+    std::vector<VertexTrait> randomGraphVertices;
+    std::vector<EdgeTrait> randomGraphEdges;
 
     // get input states with PlannerInputStates helper, pis_
     while (const base::State *st = pis_.nextStart()) {
-    // st will contain a start state.  Typically this state will
-    // be cloned here and inserted into the Planner's data structure.
-        // si_->copyState() // create suitable data structure
+        // fill nn structure with starting state for all possible worlds
         for (int i = 0; i < numWorldStates; i++) {
             auto *motion = new Motion(si_);
             si_->copyState(motion->state, st);
             std::vector<float> initBelief;
-            int numObjects = si_->getWorld()->getNumObjects();
+            int numObjects = world->getNumObjects();
             for (int i = 0; i < numObjects; i++) {
                 initBelief.push_back(1 / numObjects);
             }
-            motion->beliefs = initBelief;
-            motion->idx = 0;
+            motion->nodeIdx = 0;
             nn_.at(i)->add(motion);
 
-            VertexTrait v = add_vertex(beliefGraph);
-            beliefGraph[v].state = motion->state;
-            beliefGraph[v].color = colors[i % static_cast<int>(colors.size())];
-            // TODO get bounds and use them for pos calculation
-            double x = static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[0] * 10;
-            double y = (static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[1] * 10) + (20 * i);
-            std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
-            beliefGraph[v].pos = pos_str;
-            beliefGraphVertices[i].push_back(v);
-            allBeliefGraphVertices.push_back(v);
+            // add start node to random graph once
+            if (i == 0) {
+                VertexTrait v = add_vertex(randomGraph);
+                randomGraph[v].state = motion->state;
+                randomGraph[v].observableObjects = std::vector<int>{};
+                randomGraph[v].fontcolor = "red";
+                randomGraphVertices.push_back(v);
+            }
         }
     }
 
     if (!sampler_)
         sampler_ = si_->allocStateSampler();
 
-    // if needed, sample states from the goal region (and wait until a state is sampled)
-    // const base::State *st = pis_.nextGoal(ptc);
-
     Motion *solution[numWorldStates];
-//    std::vector<base::State*> *vertices[numWorldStates];
-//    typedef std::pair<base::State*, base::State*> Edge;
-//    std::vector<Edge> *edges[numWorldStates];
-
     for (int i = 0; i < numWorldStates; i++) {
         solution[i] = nullptr;
     }
+
     auto *rmotion = new Motion(si_);
     base::State *rstate = rmotion->state;
-
-    int stateIdx[numWorldStates];
-    for (int i = 0; i < numWorldStates; i++) {
-        stateIdx[i] = 1;
-    }
-
-    // <<world_idx, world_idx>, state_idx>
-    std::vector<std::pair<std::pair<int, int>, int>> edgesBetweenWorlds;
 
     // max distance to goal for goal states
     double dist = 0.0;
 
+    int randomGraphIdx = 1;
+
     // periodically check if ptc() returns true.
     // if it does, terminate planning.
     while (!ptc()) {
-        // Start planning here.
+        // Sample a new state uniformly or sample the goal
         std::cout << "New state sampled.\n";
         if ((goal_s != nullptr) && rng_.uniform01() < goalBias_ && goal_s->canSample())
             goal_s->sampleGoal(rstate);
@@ -110,86 +94,69 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             sampler_->sampleUniform(rstate);
 
         // Sample world
-        // int worldIdx = rand() % si_->getWorld().getNumWorldStates();
+        int sampledWorldIdx = rand() % world->getNumWorldStates();
+        world->setState(sampledWorldIdx);
 
-        ompl::base::World* world = si_->getWorld();
+        // Check if sampled state is valid in sampled world
+        if (!si_->isValid(rstate, *world)) {
+            continue;
+        }
+
+        base::State *dstate = rstate;
+        // add new node to random graph
+        VertexTrait v = add_vertex(randomGraph);
+        randomGraph[v].state = si_->allocState();
+        si_->copyState(randomGraph[v].state, dstate);
+
+        // check which objects are visible from sampled state
+        // TODO currently using camera image taken in a world in which all objects are present
+        world->setState(world->getNumWorldStates() - 1);
+        randomGraph[v].observableObjects = si_->targetFound(dstate);
+
+        randomGraphVertices.push_back(v);
+
+        // terminate if solution for all worlds is found
         bool flag = false;
 
-        /// iterate worlds
-        for (int worldIdx = 0; worldIdx < numWorldStates; worldIdx++) {
-//            if (solution[worldIdx] != nullptr) {
-//                continue;
-//            }
+        std::set<int> parentNodes;
 
-            std::cout << "New world set." << std::endl;
+        // iterate worlds
+        for (int worldIdx = 0; worldIdx < numWorldStates; worldIdx++) {
             // set world state
             world->setState(worldIdx);
+            std::cout << "New world set." << std::endl;
 
-            // find closest state in the tree
+            // find the closest state in the tree
             Motion *nmotion = nn_.at(worldIdx)->nearest(rmotion);
-            base::State *dstate = rstate;
 
             // check if motion is valid
             if (si_->checkMotionWorlds(nmotion->state, dstate)) {
-                                // add motion to nn
+                // add motion to nn
                 auto *motion = new Motion(si_);
                 si_->copyState(motion->state, dstate);
                 motion->parent = nmotion;
-
-                // the current world is always a possible belief for this state
-//                motion->beliefs.insert(worldIdx);
-//                motion->beliefs.insert(motion->parent->beliefs.begin(), motion->parent->beliefs.end());
-
-                motion->idx = stateIdx[worldIdx];
-
-                std::vector<int> currWorldState = world->getStateInt();
-                // check which objects are visible from sampled state
-                std::vector<int> foundIdx = si_->targetFound(dstate);
-                // motion->beliefs = world->observe(motion->parent->beliefs, foundIdx);
-                // TODO observe function can expect that only one object is seen, everything else is handled here
-                for (int objectIdx : foundIdx) {
-                    std::cout << "Object " << objectIdx << " is visible from current state." << std::endl;
-                    int prevValue = currWorldState.at(objectIdx);
-                    std::vector<int> newWorldState = currWorldState;
-                    newWorldState.at(objectIdx) = abs(prevValue - 1);
-                    int newWorldIdx = world->getStateIdx(newWorldState);
-//                    motion->beliefs.insert(newWorldIdx);
-                    std::cout << "New connection between worlds " << worldIdx << " and " << newWorldIdx << std::endl;
-                }
-
+                motion->nodeIdx = randomGraphIdx;
                 nn_.at(worldIdx)->add(motion);
 
-//                sampledStates[worldIdx]->push_back(motion->state);
-//                edges[worldIdx]->push_back(Edge(motion->state, motion->parent->state));
-                //BeliefGraph beliefGraph(edges[0]->begin(), edges[0]->end(), static_cast<int>(sampledStates[0]->size()));
-                //BeliefGraph beliefGraph(static_cast<int>(sampledStates[0]->size()));
-//                Vertex_t v = boost::add_vertex(motion->state);
-                //boost::add_edge(edges[0]->at(0).first, edges[0]->at(0).second, beliefGraph);
-                VertexTrait v = add_vertex(beliefGraph);
-                beliefGraph[v].state = motion->state;
-                beliefGraph[v].color = colors[worldIdx % static_cast<int>(colors.size())];
-                double x = static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[0] * 10;
-                double y = (static_cast<const base::RealVectorStateSpace::StateType *>(motion->state)->values[1] * 10) + (20 * worldIdx);
-                std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
-                beliefGraph[v].pos = pos_str;
+                // add new edge to random graph if it does not yet exist; otherwise push back valid world idx
+                if (parentNodes.find(motion->parent->nodeIdx) == parentNodes.end()) {
+                    std::pair<EdgeTrait , bool> p = add_edge(randomGraphVertices.at(motion->nodeIdx), randomGraphVertices.at(motion->parent->nodeIdx), randomGraph);
+                    EdgeTrait e = p.first;
+                    randomGraph[e].worldValidities.push_back(worldIdx);
+                    randomGraphEdges.push_back(e);
+                    parentNodes.insert(motion->parent->nodeIdx);
 
-                beliefGraphVertices[worldIdx].push_back(v);
-                allBeliefGraphVertices.push_back(v);
+                } else {
+                    int edgeIdx = 0;
+                    for (; edgeIdx < static_cast<int>(randomGraphEdges.size()); edgeIdx++) {
+                        if (randomGraphEdges.at(edgeIdx).m_source == motion->nodeIdx && randomGraphEdges.at(edgeIdx).m_target == motion->parent->nodeIdx) {
+                            break;
+                        }
+                    }
+                    randomGraph[randomGraphEdges.at(edgeIdx)].worldValidities.push_back(worldIdx);
+                }
 
-                std::pair<EdgeTrait , bool> p = add_edge(beliefGraphVertices[worldIdx].at(motion->idx), beliefGraphVertices[worldIdx].at(motion->parent->idx), beliefGraph);
-                EdgeTrait e = p.first;
-                beliefGraph[e].isWorldConnection = false;
-
-//                std::set<int> oldBeliefs = motion->parent->beliefs;
-//                std::set<int> newBeliefs = motion->beliefs;
-//                if (newBeliefs != oldBeliefs) {
-//                    for (int belief : newBeliefs) {
-//                        if (oldBeliefs.find(belief) == oldBeliefs.end()) {
-//                            edgesBetweenWorlds.push_back(std::pair<std::pair<int, int>, int> {{worldIdx, belief}, motion->idx});
-//                        }
-//                    }
-//                }
-
+                // print info
                 const auto* state3D =
                         motion->state->as<ompl::base::RealVectorStateSpace::StateType>();
                 const auto* parent3D =
@@ -200,14 +167,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 std::cout << "New motion added to world " << worldIdx << " from state [" << parent3D->values[0] << ", "
                     << parent3D->values[1] << ", " << parent3D->values[2] << "] to state [" << state3D->values[0] << ", "
                     << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
-
-                stateIdx[worldIdx]++;
             }
 
-            // check if solution found
+            // check if solution is found
             bool sat = goal->isSatisfied(nmotion->state, &dist);
             if (sat) {
                 solution[worldIdx] = nmotion;
+                randomGraph[randomGraphIdx].fontcolor = "blue";
                 bool allWorldsSolved = true;
                 for (Motion *s : solution) {
                     if (s == nullptr) {
@@ -226,63 +192,122 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             break;
         }
 
-        // call routines from SpaceInformation (si_) as needed. i.e.,
-        // si_->allocStateSampler() for sampling,
-        // si_->checkMotion(state1, state2) for state validity, etc...
-
-            // si_->checkMotion()
-
-        // use the Goal pointer to evaluate whether a sampled state satisfies the goal requirements
-
-        // use log macros for informative messaging, i.e., logInfo("Planner found a solution!");
+        randomGraphIdx++;
     }
 
-    // add edges between worlds to belief graph
-    for (std::pair<std::pair<int, int>, int> ebw : edgesBetweenWorlds) {
-        // check if a connection between the worlds is possible
-        if (static_cast<int>(beliefGraphVertices[ebw.first.first].size()) >= ebw.second && static_cast<int>(beliefGraphVertices[ebw.first.second].size()) >= ebw.second) {
-            std::pair<EdgeTrait , bool> p = add_edge(beliefGraphVertices[ebw.first.first].at(ebw.second), beliefGraphVertices[ebw.first.second].at(ebw.second), beliefGraph);
-            EdgeTrait e = p.first;
-            beliefGraph[e].isWorldConnection = true;
-            beliefGraph[e].color = "red";
+    saveGraph(randomGraph, "random");
+
+    // create belief graph
+    std::vector<base::BeliefState> beliefStates = world->getAllBeliefStates();
+    Graph beliefGraph;
+    std::vector<VertexTrait> beliefGraphVertices[static_cast<int>(beliefStates.size())];
+    std::vector<VertexTrait> allBeliefGraphVertices;
+
+    // add nodes for all possible beliefs
+    for (VertexTrait node : randomGraphVertices) {
+        // print info
+        const auto* state3D =
+                randomGraph[node].state->as<ompl::base::RealVectorStateSpace::StateType>();
+
+        std::cout << "Added to RandomGraph: [" << state3D->values[0] << ", "
+                  << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
+
+        int idx = 0;
+        for (base::BeliefState b : beliefStates) {
+            VertexTrait v = add_vertex(beliefGraph);
+            beliefGraph[v].state = randomGraph[node].state;
+            beliefGraph[v].observableObjects = randomGraph[node].observableObjects;
+            beliefGraph[v].fontcolor = randomGraph[node].fontcolor;
+            beliefGraph[v].color = colors[idx % static_cast<int>(colors.size())];
+            beliefGraph[v].beliefState = b;
+            beliefGraphVertices[idx].push_back(v);
+            allBeliefGraphVertices.push_back(v);
+            idx++;
         }
     }
 
-    std::cout << "There are max " << static_cast<int>(edgesBetweenWorlds.size()) << " edges between worlds." << std::endl;
+    // connect nodes within same belief
+    for (EdgeTrait e : randomGraphEdges) {
+        std::pair<std::vector<int>, std::vector<base::BeliefState>> p = world->getCompatibleBeliefs(
+                randomGraph[e].worldValidities);
+        std::vector<int> beliefIdx = p.first;
+        for (int idx: beliefIdx) {
+            std::pair<EdgeTrait, bool> p = add_edge(beliefGraphVertices[idx].at(e.m_source),
+                                                    beliefGraphVertices[idx].at(e.m_target), beliefGraph);
+            EdgeTrait e = p.first;
+            beliefGraph[e].isWorldConnection = false;
+        }
+    }
 
-//    // policy extraction
-//    std::vector<double> costs;
-//    std::priority_queue<std::pair<double, VertexTrait>, std::vector<std::pair<double, VertexTrait>>, std::greater<std::pair<double, VertexTrait>>> pq;
-//    // init priority queue
-//    for (VertexTrait v : allBeliefGraphVertices) {
-//        if(goal->isSatisfied(beliefGraph[v].state, &dist)) {
-//            costs.push_back(0);
-//            beliefGraph[v].fontcolor = "red";
-//            pq.push(std::make_pair(0, v));
-//        }
-//        else {
-//            costs.push_back(std::numeric_limits<double>::infinity());
-//        }
-//    }
-//
-//    while (!pq.empty())
-//    {
-//        VertexTrait v = pq.top().second;
-//        pq.pop();
-//        BeliefGraph::adjacency_iterator it, end;
-//        std::tie(it, end) = boost::adjacent_vertices(v, beliefGraph);
-//        std::cout << "Parents of vertex " << v << ": ";
-//        for (; it != end; it++) {
-//            VertexTrait parent = it.dereference();
-//            std::cout << parent << " ";
-//            EdgeTrait e = boost::edge(v, parent, beliefGraph).first;
-//            double newCost;
-//            if (!beliefGraph[e].isWorldConnection) {
-//                double distance = si_->getStateSpace()->distance(beliefGraph[v].state, beliefGraph[parent].state);
-//                newCost = distance + costs[v];
-//            }
-//            else {
-//                BeliefGraph::adjacency_iterator pit, pend;
+    saveGraph(beliefGraph, "belief_beta");
+
+    // create transitions between beliefs due to observations
+    for (int beliefIdx = 0; beliefIdx < sizeof(beliefGraphVertices) / sizeof(beliefGraphVertices[0]); beliefIdx++) {
+        std::set<int> createdConnections;
+        for (int nodeIdx = 0; nodeIdx < static_cast<int>(beliefGraphVertices[beliefIdx].size()); nodeIdx++) {
+            VertexTrait v = beliefGraphVertices[beliefIdx].at(nodeIdx);
+            // TODO delete not connected nodes
+            // TODO handle multiple objects at once
+            for (int objectIdx : beliefGraph[v].observableObjects) {
+                std::vector<base::BeliefState> newBeliefs = world->observe(beliefGraph[v].beliefState, objectIdx);
+                // add edges if beliefs change
+                if (static_cast<int>(newBeliefs.size()) != 1) {
+                    for (base::BeliefState belief : newBeliefs) {
+                        int newBeliefIdx = world->getBeliefIdx(belief);
+                        if (static_cast<int>(beliefGraphVertices[newBeliefIdx].size()) > nodeIdx) {
+                            if (createdConnections.find(newBeliefIdx) == createdConnections.end()) {
+                                std::pair<EdgeTrait , bool> p = add_edge(beliefGraphVertices[beliefIdx].at(nodeIdx), beliefGraphVertices[newBeliefIdx].at(nodeIdx), beliefGraph);
+                                EdgeTrait e = p.first;
+                                beliefGraph[e].isWorldConnection = true;
+                                beliefGraph[e].color = "red";
+                                beliefGraph[beliefGraphVertices[beliefIdx].at(nodeIdx)].beliefChildren.push_back(beliefGraphVertices[newBeliefIdx].at(nodeIdx));
+                                createdConnections.insert(newBeliefIdx);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    saveGraph(beliefGraph, "belief");
+
+    // policy extraction
+    std::vector<double> costs;
+    std::priority_queue<std::pair<double, VertexTrait>, std::vector<std::pair<double, VertexTrait>>, std::greater<std::pair<double, VertexTrait>>> pq;
+    // init priority queue
+    for (VertexTrait v : allBeliefGraphVertices) {
+        // goal states have 0 costs
+        if(beliefGraph[v].fontcolor == "blue") {
+            costs.push_back(0);
+            pq.push(std::make_pair(0, v));
+        }
+        // all other states have inf costs
+        else {
+            costs.push_back(std::numeric_limits<double>::infinity());
+        }
+    }
+
+    while (!pq.empty())
+    {
+        // take vertex with lowest cost from priority queue
+        VertexTrait v = pq.top().second;
+        pq.pop();
+        Graph::adjacency_iterator it, end;
+        std::tie(it, end) = boost::adjacent_vertices(v, beliefGraph);
+        // iterate over all adjacent vertices
+        for (; it != end; it++) {
+            VertexTrait parent = it.dereference();
+            EdgeTrait e = boost::edge(v, parent, beliefGraph).first;
+            double newCost;
+            // if edge is action edge -> Bellman update
+            if (!beliefGraph[e].isWorldConnection) {
+                double distance = si_->getStateSpace()->distance(beliefGraph[v].state, beliefGraph[parent].state);
+                newCost = distance + costs[v];
+            }
+            // if edge is connection between beliefs
+            else {
+//                Graph::adjacency_iterator pit, pend;
 //                std::tie(pit, pend) = boost::adjacent_vertices(parent, beliefGraph);
 //                int numChildren = 0;
 //                std::vector<VertexTrait> childrenNodes;
@@ -299,39 +324,21 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                    }
 //                    newCost += (1/numChildren) * costs[cn];
 //                }
-//            }
-//            if (newCost < costs[parent]) {
-//                costs[parent] = newCost;
-//                pq.push(std::make_pair(newCost, parent));
-//            }
-//        }
-//        std::cout << std::endl;
-//    }
-
-    // save colored graph png
-    std::ofstream colored_pos_dot_file("colored_grid_pos.dot");
-    boost::dynamic_properties dp;
-    dp.property("node_id",   get(boost::vertex_index, beliefGraph));
-    dp.property("color", get(&EdgeStruct::color, beliefGraph));
-    dp.property("color", get(&VertexStruct::color, beliefGraph));
-    dp.property("fontcolor", get(&VertexStruct::fontcolor, beliefGraph));
-    dp.property("pos", get(&VertexStruct::pos, beliefGraph));
-    boost::write_graphviz_dp(colored_pos_dot_file, beliefGraph, dp);
-    system("neato -T png colored_grid_pos.dot -o colored_grid_pos.png");
-
-    std::ofstream colored_dot_file("colored_grid.dot");
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, beliefGraph));
-    dp_no_pos.property("color", get(&EdgeStruct::color, beliefGraph));
-    dp_no_pos.property("color", get(&VertexStruct::color, beliefGraph));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, beliefGraph));
-    boost::write_graphviz_dp(colored_dot_file, beliefGraph, dp_no_pos);
-    system("neato -T png colored_grid.dot -o colored_grid.png");
-
-    std::cout << "Graph saved." << std::endl;
+                std::vector<int> children = beliefGraph[parent].beliefChildren;
+                newCost = 0;
+                for (int nodeIdx : children) {
+                    newCost += world->calcBranchingProbabilitiy(beliefGraph[parent].beliefState, beliefGraph[nodeIdx].beliefState) * costs[nodeIdx];
+                }
+            }
+            if (newCost < costs[parent]) {
+                costs[parent] = newCost;
+                pq.push(std::make_pair(newCost, parent));
+            }
+        }
+    }
 
     // create optimal path tree
-    BeliefGraph pathTree;
+    Graph pathTree;
     VertexTrait currVertex = 0;
     VertexTrait v = add_vertex(pathTree);
     pathTree[v].state = beliefGraph[currVertex].state;
@@ -391,9 +398,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     return base::PlannerStatus::EXACT_SOLUTION;
 }
 
-void ompl::geometric::Partial::constructPathTree(BeliefGraph pathTree, BeliefGraph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited) {
+void ompl::geometric::Partial::constructPathTree(Graph pathTree, Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited) {
     while (true) {
-        BeliefGraph::adjacency_iterator it, end;
+        Graph::adjacency_iterator it, end;
         std::tie(it, end) = boost::adjacent_vertices(currVertex, beliefGraph);
         VertexTrait nextVertex = -1;
         for (; it != end; it++) {
@@ -423,6 +430,21 @@ void ompl::geometric::Partial::constructPathTree(BeliefGraph pathTree, BeliefGra
             break;
         }
     }
+}
+
+// save graph as png
+void ompl::geometric::Partial::saveGraph(Graph g, std::string name) {
+    std::ofstream colored_dot_file(name + std::string(".dot"));
+    boost::dynamic_properties dp_no_pos;
+    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+    dp_no_pos.property("color", get(&VertexStruct::color, g));
+    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+    std::stringstream command;
+    command << "neato -T png " << name << ".dot -o " << name << "grid.png";
+    system(command.str().c_str());
+    std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 

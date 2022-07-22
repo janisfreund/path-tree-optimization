@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <functional>
+#include <iostream>
 
 namespace ompl
 {
@@ -14,6 +15,8 @@ namespace ompl
             NONEXISTENT,
             EXISTENT
         };
+
+        typedef std::vector<float> BeliefState;
 
         class POObject
         {
@@ -138,6 +141,10 @@ namespace ompl
                 }
             }
 
+            std::vector<BeliefState> getAllBeliefStates() {
+                return beliefStates_;
+            }
+
             bool beliefChanged(std::vector<float> oldBeliefs, int observableObject) {
                 if(!calcBelief(oldBeliefs, std::vector<int>{observableObject}, std::vector<ObjectState>{ObjectState(0)}).empty()) {
                     return true;
@@ -145,7 +152,16 @@ namespace ompl
                 return false;
             }
 
-            std::vector<std::vector<float>> observe(std::vector<float> oldBeliefs, int observableObject) {
+            std::vector<BeliefState> observe(BeliefState oldBeliefs, int observableObject) {
+                for (float f : oldBeliefs) {
+                    if (f == 1) {
+                        return std::vector<std::vector<float>>{oldBeliefs};
+                    }
+                    else if (f != 0) {
+                        break;
+                    }
+                }
+
                 std::vector<std::vector<float>> newBeliefs;
 //                std::vector<std::vector<ObjectState>> *combinations;
 //                generateCombinations(combinations, std::vector<ObjectState>{}, static_cast<int>(observableObjects.size()), 0);
@@ -165,14 +181,14 @@ namespace ompl
                 return std::vector<std::vector<float>>{oldBeliefs};
             }
 
-            std::pair<std::vector<int>, std::vector<std::vector<float>>> getCompatibleBeliefs(std::vector<int> worldValidities) {
+            std::pair<std::vector<int>, std::vector<BeliefState>> getCompatibleBeliefs(std::vector<int> worldValidities) {
                 std::vector<int> validIdx;
                 std::vector<std::vector<float>> validBeliefs;
                 for (int i = 0; i < static_cast<int>(beliefStates_.size()); i++) {
-                    bool isValid = true;
+                    bool isValid = false;
                     for (int worldIdx : worldValidities) {
-                        if (beliefStates_.at(i).at(worldIdx) == 0) {
-                            isValid = false;
+                        if (beliefStates_.at(i).at(worldIdx) != 0) {
+                            isValid = true;
                         }
                     }
                     if (isValid) {
@@ -183,24 +199,40 @@ namespace ompl
                 return std::make_pair(validIdx, validBeliefs);
             }
 
+            int getBeliefIdx(BeliefState belief) {
+                int idx = 0;
+                bool flag = false;
+                for (BeliefState testBelief : beliefStates_) {
+                    for (int i = 0; i < getNumWorldStates(); i++) {
+                        // std::cout << "#States: " << getNumWorldStates() << "; #Test: " << static_cast<int>(testBelief.size()) << "; #Belief: " << static_cast<int>(belief.size()) << std::endl;
+                        if (testBelief.at(i) != belief.at(i)) {
+                            idx++;
+                            break;
+                        }
+                        flag = true;
+                    }
+                    if (flag) {
+                        break;
+                    }
+                }
+                // TODO fails if not found
+                return idx;
+            }
+
+            double calcBranchingProbabilitiy(BeliefState parentBs, BeliefState childBs) {
+                double p = 0;
+                for (int i = 0; i < getNumWorldStates(); i++) {
+                    if (childBs.at(i) > 0) {
+                        p += parentBs.at(i);
+                    }
+                }
+                return p;
+            }
+
         private:
             void generateCombinations(std::vector<ObjectState> combination, int len, int index) {
                 if (len == index) {
                     worldStates_.push_back(combination);
-                    return;
-                }
-
-                // TODO be generic, also if enum changes
-                for (int i = 0; i < 2; i++) {
-                    std::vector<ObjectState> comb(combination);
-                    comb.push_back(ObjectState(i));
-                    generateCombinations(comb, len, index+1);
-                }
-            }
-
-            void generateCombinations(std::vector<std::vector<ObjectState>> *states, std::vector<ObjectState> combination, int len, int index) {
-                if (len == index) {
-                    states->push_back(combination);
                     return;
                 }
 
@@ -261,7 +293,7 @@ namespace ompl
                 for (int idx : invalidWorldIndices) {
                     deletedBeliefs += oldBeliefs.at(idx);
                 }
-                float multiplier = 1 / deletedBeliefs;
+                float multiplier = 1 / (1. - deletedBeliefs);
                 bool beliefsChanged = false;
                 for (int i = 0; i < getNumWorldStates(); i++) {
                     if (invalidWorldIndices.find(i) != invalidWorldIndices.end()) {
@@ -283,8 +315,7 @@ namespace ompl
             int numObjects_;
             std::vector<ObjectState> objectStates_;
             std::vector<std::vector<ObjectState>> worldStates_;
-            std::vector<std::vector<float>> beliefStates_;
-            // std::function<bool(const State *state)> targetFound_;
+            std::vector<BeliefState> beliefStates_;
         };
     }
 }

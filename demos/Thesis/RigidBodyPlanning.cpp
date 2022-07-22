@@ -92,6 +92,8 @@ public:
     }
 
     static std::vector<int> targetFound(const ob::State *state) {
+        int r = rand() % 2;
+        // return std::vector<int>{r};
         return std::vector<int>{0};
     }
 
