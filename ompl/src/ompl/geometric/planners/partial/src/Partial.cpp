@@ -104,6 +104,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
         base::State *dstate = rstate;
         // add new node to random graph
+        // TODO if goal state is sampled, only add once to random graph
         VertexTrait v = add_vertex(randomGraph);
         randomGraph[v].state = si_->allocState();
         si_->copyState(randomGraph[v].state, dstate);
@@ -195,7 +196,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         randomGraphIdx++;
     }
 
-    saveGraph(randomGraph, "random");
+    saveGraph(randomGraph, "random", false);
 
     // create belief graph
     std::vector<base::BeliefState> beliefStates = world->getAllBeliefStates();
@@ -227,50 +228,55 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     }
 
     // connect nodes within same belief
-    for (EdgeTrait e : randomGraphEdges) {
-        std::pair<std::vector<int>, std::vector<base::BeliefState>> p = world->getCompatibleBeliefs(
-                randomGraph[e].worldValidities);
-        std::vector<int> beliefIdx = p.first;
+    for (EdgeTrait re : randomGraphEdges) {
+        std::pair<std::vector<int>, std::vector<base::BeliefState>> bp = world->getCompatibleBeliefs(
+                randomGraph[re].worldValidities);
+        std::vector<int> beliefIdx = bp.first;
         for (int idx: beliefIdx) {
-            std::pair<EdgeTrait, bool> p = add_edge(beliefGraphVertices[idx].at(e.m_source),
-                                                    beliefGraphVertices[idx].at(e.m_target), beliefGraph);
+            std::pair<EdgeTrait, bool> p = add_edge(beliefGraphVertices[idx].at(re.m_source),
+                                                    beliefGraphVertices[idx].at(re.m_target), beliefGraph);
             EdgeTrait e = p.first;
             beliefGraph[e].isWorldConnection = false;
         }
     }
 
-    saveGraph(beliefGraph, "belief_beta");
-
     // create transitions between beliefs due to observations
     for (int beliefIdx = 0; beliefIdx < sizeof(beliefGraphVertices) / sizeof(beliefGraphVertices[0]); beliefIdx++) {
-        std::set<int> createdConnections;
+        //std::set<int> createdConnections;
         for (int nodeIdx = 0; nodeIdx < static_cast<int>(beliefGraphVertices[beliefIdx].size()); nodeIdx++) {
             VertexTrait v = beliefGraphVertices[beliefIdx].at(nodeIdx);
             // TODO delete not connected nodes
             // TODO handle multiple objects at once
             for (int objectIdx : beliefGraph[v].observableObjects) {
                 std::vector<base::BeliefState> newBeliefs = world->observe(beliefGraph[v].beliefState, objectIdx);
+                std::cout << "From belief " << world->getBeliefIdx(beliefGraph[v].beliefState) << " (";
+                world->printBelief(beliefGraph[v].beliefState);
+                std::cout << ") to belief ";
                 // add edges if beliefs change
                 if (static_cast<int>(newBeliefs.size()) != 1) {
                     for (base::BeliefState belief : newBeliefs) {
                         int newBeliefIdx = world->getBeliefIdx(belief);
+                        std::cout << newBeliefIdx << " (";
+                        world->printBelief(belief);
+                        std::cout << ") ,";
                         if (static_cast<int>(beliefGraphVertices[newBeliefIdx].size()) > nodeIdx) {
-                            if (createdConnections.find(newBeliefIdx) == createdConnections.end()) {
+                            //if (createdConnections.find(newBeliefIdx) == createdConnections.end()) {
                                 std::pair<EdgeTrait , bool> p = add_edge(beliefGraphVertices[beliefIdx].at(nodeIdx), beliefGraphVertices[newBeliefIdx].at(nodeIdx), beliefGraph);
                                 EdgeTrait e = p.first;
                                 beliefGraph[e].isWorldConnection = true;
                                 beliefGraph[e].color = "red";
                                 beliefGraph[beliefGraphVertices[beliefIdx].at(nodeIdx)].beliefChildren.push_back(beliefGraphVertices[newBeliefIdx].at(nodeIdx));
-                                createdConnections.insert(newBeliefIdx);
-                            }
+                                //createdConnections.insert(newBeliefIdx);
+                            //}
                         }
                     }
+                    std::cout << std::endl;
                 }
             }
         }
     }
 
-    saveGraph(beliefGraph, "belief");
+    saveGraph(beliefGraph, "belief", false);
 
     // policy extraction
     std::vector<double> costs;
@@ -278,9 +284,17 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // init priority queue
     for (VertexTrait v : allBeliefGraphVertices) {
         // goal states have 0 costs
-        if(beliefGraph[v].fontcolor == "blue") {
+        // check if final belief
+        bool final = false;
+        for (int i : beliefGraph[v].beliefState) {
+            if (i == 1) {
+                final = true;
+            }
+        }
+        if(beliefGraph[v].fontcolor == "blue" /*&& final*/) {
             costs.push_back(0);
             pq.push(std::make_pair(0, v));
+            std::cout << "New goal state added: " << std::endl;
         }
         // all other states have inf costs
         else {
@@ -302,8 +316,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             double newCost;
             // if edge is action edge -> Bellman update
             if (!beliefGraph[e].isWorldConnection) {
-                double distance = si_->getStateSpace()->distance(beliefGraph[v].state, beliefGraph[parent].state);
-                newCost = distance + costs[v];
+                if (isinf(costs[v])) {
+                    newCost = std::numeric_limits<double>::infinity();
+                }
+                else {
+                    double distance = si_->getStateSpace()->distance(beliefGraph[v].state, beliefGraph[parent].state);
+                    newCost = distance + costs[v];
+                }
             }
             // if edge is connection between beliefs
             else {
@@ -325,9 +344,14 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                    newCost += (1/numChildren) * costs[cn];
 //                }
                 std::vector<int> children = beliefGraph[parent].beliefChildren;
-                newCost = 0;
-                for (int nodeIdx : children) {
-                    newCost += world->calcBranchingProbabilitiy(beliefGraph[parent].beliefState, beliefGraph[nodeIdx].beliefState) * costs[nodeIdx];
+                if (children.empty()) {
+                    newCost = newCost = std::numeric_limits<double>::infinity();
+                }
+                else {
+                    newCost = 0;
+                    for (int nodeIdx : children) {
+                        newCost += world->calcBranchingProbabilitiy(beliefGraph[parent].beliefState, beliefGraph[nodeIdx].beliefState) * costs[nodeIdx];
+                    }
                 }
             }
             if (newCost < costs[parent]) {
@@ -337,12 +361,24 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
     }
 
+    // print costs
+    std::cout << "Costs:" << std::endl;
+    int n = 0;
+    for (double c : costs) {
+        std::cout << n << ": " << c << std::endl;
+        n++;
+    }
+
     // create optimal path tree
-    Graph pathTree;
     VertexTrait currVertex = 0;
     VertexTrait v = add_vertex(pathTree);
     pathTree[v].state = beliefGraph[currVertex].state;
-    // constructPathTree(pathTree, beliefGraph, costs, v, currVertex, std::set<VertexTrait>{});
+    pathTree[v].fontcolor = beliefGraph[currVertex].fontcolor;
+    pathTree[v].color = beliefGraph[currVertex].color;
+    pathTree[v].label = std::to_string(currVertex);
+    constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{});
+
+    saveGraph(pathTree, "path", true);
 
     // When a solution path is computed, save it here
     std::vector<int> worldsSolved;
@@ -398,51 +434,70 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     return base::PlannerStatus::EXACT_SOLUTION;
 }
 
-void ompl::geometric::Partial::constructPathTree(Graph pathTree, Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited) {
+void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited) {
     while (true) {
         Graph::adjacency_iterator it, end;
         std::tie(it, end) = boost::adjacent_vertices(currVertex, beliefGraph);
-        VertexTrait nextVertex = -1;
+        VertexTrait bestVertex = 0;
+        bool isConn = !beliefGraph[currVertex].beliefChildren.empty();
         for (; it != end; it++) {
-            // world connection cyclic at the moment -> endless loop
             VertexTrait der = it.dereference();
             if (beliefGraph[boost::edge(it.dereference(), currVertex, beliefGraph).first].isWorldConnection) {
-                if (visited.find(it.dereference()) == visited.end()) {
-                    VertexTrait w = add_vertex(pathTree);
-                    pathTree[w].state = beliefGraph[it.dereference()].state;
-                    std::pair<EdgeTrait , bool> p = add_edge(v, w, pathTree);
-                    visited.insert(currVertex);
-                    constructPathTree(pathTree, beliefGraph, costs, w, it.dereference(), visited);
+                if (isConn) {
+                    if (visited.find(it.dereference()) == visited.end()) {
+                        VertexTrait w = add_vertex(pathTree);
+                        pathTree[w].state = beliefGraph[it.dereference()].state;
+                        pathTree[w].fontcolor = beliefGraph[it.dereference()].fontcolor;
+                        pathTree[w].color = beliefGraph[it.dereference()].color;
+                        pathTree[w].label = std::to_string(it.dereference());
+                        std::pair<EdgeTrait, bool> p = add_edge(v, w, pathTree);
+                        EdgeTrait e = p.first;
+                        pathTree[e].color = "red";
+                        visited.insert(currVertex);
+                        constructPathTree(beliefGraph, costs, w, it.dereference(), visited);
+                    }
                 }
-                // recursive call -> start with currVertex = it.dereference()
             }
-            else if (nextVertex == -1 || costs[it.dereference()] < costs[nextVertex]) {
-                nextVertex = it.dereference();
+            else if (bestVertex == 0 || costs[it.dereference()] < costs[bestVertex]) {
+                bestVertex = it.dereference();
             }
         }
 
+        if (isConn || bestVertex == 0) {
+            break;
+        }
+
         VertexTrait u = add_vertex(pathTree);
-        pathTree[u].state = beliefGraph[nextVertex].state;
+        pathTree[u].state = beliefGraph[bestVertex].state;
+        pathTree[u].fontcolor = beliefGraph[bestVertex].fontcolor;
+        pathTree[u].color = beliefGraph[bestVertex].color;
+        pathTree[u].label = std::to_string(bestVertex);
         std::pair<EdgeTrait , bool> p = add_edge(v, u, pathTree);
         v = u;
-        currVertex = nextVertex;
-        if (beliefGraph[nextVertex].fontcolor == "red") {
+        currVertex = bestVertex;
+
+        saveGraph(pathTree, "path_debug", true);
+
+        if (beliefGraph[bestVertex].fontcolor == "blue") {
             break;
         }
     }
 }
 
 // save graph as png
-void ompl::geometric::Partial::saveGraph(Graph g, std::string name) {
+void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels) {
     std::ofstream colored_dot_file(name + std::string(".dot"));
     boost::dynamic_properties dp_no_pos;
     dp_no_pos.property("node_id",   get(boost::vertex_index, g));
     dp_no_pos.property("color", get(&EdgeStruct::color, g));
     dp_no_pos.property("color", get(&VertexStruct::color, g));
     dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+    if (useLabels) {
+        dp_no_pos.property("label", get(&VertexStruct::label, g));
+    }
     boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
     std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << "grid.png";
+    command << "neato -T png " << name << ".dot -o " << name << ".png";
     system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }

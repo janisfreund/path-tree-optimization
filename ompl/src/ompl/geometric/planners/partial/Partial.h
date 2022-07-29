@@ -95,6 +95,7 @@ namespace ompl
                 std::string color;
                 std::string fontcolor;
                 std::string pos;
+                std::string label;
                 std::vector<int> observableObjects;
                 std::vector<float> beliefState;
                 std::vector<int> beliefChildren;
@@ -111,9 +112,9 @@ namespace ompl
             typedef boost::graph_traits<Graph>::vertex_descriptor VertexTrait;
             typedef boost::graph_traits<Graph>::edge_descriptor EdgeTrait;
 
-            void constructPathTree(Graph pathTree, Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
+            void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
 
-            void saveGraph(Graph g, std::string name);
+            void saveGraph(Graph g, std::string name, bool useLabels);
 
             /** \brief State sampler */
             base::StateSamplerPtr sampler_;
@@ -127,6 +128,8 @@ namespace ompl
 
             /** \brief The random number generator */
             RNG rng_;
+
+            Graph pathTree;
         };
     }
 }

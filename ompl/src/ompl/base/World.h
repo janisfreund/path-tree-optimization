@@ -201,18 +201,19 @@ namespace ompl
 
             int getBeliefIdx(BeliefState belief) {
                 int idx = 0;
-                bool flag = false;
                 for (BeliefState testBelief : beliefStates_) {
+                    bool isEqual = true;
                     for (int i = 0; i < getNumWorldStates(); i++) {
                         // std::cout << "#States: " << getNumWorldStates() << "; #Test: " << static_cast<int>(testBelief.size()) << "; #Belief: " << static_cast<int>(belief.size()) << std::endl;
                         if (testBelief.at(i) != belief.at(i)) {
-                            idx++;
-                            break;
+                            isEqual = false;
                         }
-                        flag = true;
                     }
-                    if (flag) {
+                    if (isEqual) {
                         break;
+                    }
+                    else {
+                        idx++;
                     }
                 }
                 // TODO fails if not found
@@ -227,6 +228,14 @@ namespace ompl
                     }
                 }
                 return p;
+            }
+
+            void printBelief(BeliefState bs) {
+                std::cout << "[";
+                for (float f : bs) {
+                    std::cout << f << ", ";
+                }
+                std::cout << "]";
             }
 
         private:
@@ -292,6 +301,9 @@ namespace ompl
                 }
                 for (int idx : invalidWorldIndices) {
                     deletedBeliefs += oldBeliefs.at(idx);
+                }
+                if (deletedBeliefs == 1) {
+                    return std::vector<float>{};
                 }
                 float multiplier = 1 / (1. - deletedBeliefs);
                 bool beliefsChanged = false;

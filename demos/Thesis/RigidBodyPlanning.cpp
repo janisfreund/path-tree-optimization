@@ -44,6 +44,8 @@
 #include "ompl/geometric/planners/partial/Partial.h"
 #include "ompl/base/World.h"
 
+const int NUM_OBJECTS = 2;
+
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
 
@@ -92,9 +94,12 @@ public:
     }
 
     static std::vector<int> targetFound(const ob::State *state) {
-        int r = rand() % 2;
-        // return std::vector<int>{r};
-        return std::vector<int>{0};
+        int p = rand() % 100;
+        if (p > 75) {
+            int r = rand() % NUM_OBJECTS;
+            return std::vector<int>{r};
+        }
+        return std::vector<int>{};
     }
 
     void plan() {
@@ -120,7 +125,7 @@ public:
 
         si->setStateValidityAndTargetChecker(isStateValid, targetFound);
 
-        si->initWorld(1);
+        si->initWorld(NUM_OBJECTS);
 
         // create a random start state
         ob::ScopedState<> start(space);
@@ -177,7 +182,8 @@ public:
     }
 
 private:
-    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}};
+    //static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}};
+    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}};
 };
 
 int main(int /*argc*/, char ** /*argv*/)
