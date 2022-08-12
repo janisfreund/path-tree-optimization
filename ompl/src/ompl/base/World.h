@@ -5,6 +5,7 @@
 #include <set>
 #include <functional>
 #include <iostream>
+#include <algorithm>
 
 namespace ompl
 {
@@ -124,6 +125,14 @@ namespace ompl
                 return intStates;
             }
 
+            std::vector<int> getStateIntFromObjectState(std::vector<ObjectState> st) {
+                std::vector<int> intStates;
+                for (ObjectState objectState : st) {
+                    intStates.push_back(static_cast<int>(objectState));
+                }
+                return intStates;
+            }
+
             // TODO improve
             int getStateIdx(std::vector<int> worldState) {
                 int idx = 0;
@@ -185,10 +194,10 @@ namespace ompl
                 std::vector<int> validIdx;
                 std::vector<std::vector<float>> validBeliefs;
                 for (int i = 0; i < static_cast<int>(beliefStates_.size()); i++) {
-                    bool isValid = false;
-                    for (int worldIdx : worldValidities) {
-                        if (beliefStates_.at(i).at(worldIdx) != 0) {
-                            isValid = true;
+                    bool isValid = true;
+                    for (int n = 0; n < getNumObjects(); n++) {
+                        if (beliefStates_.at(i).at(n) > 0 && (std::find(worldValidities.begin(), worldValidities.end(), n) == worldValidities.end())) {
+                            isValid = false;
                         }
                     }
                     if (isValid) {
@@ -196,6 +205,7 @@ namespace ompl
                         validBeliefs.push_back(beliefStates_.at(i));
                     }
                 }
+                std::cout << "New getBelief function used." << std::endl;
                 return std::make_pair(validIdx, validBeliefs);
             }
 
@@ -234,6 +244,14 @@ namespace ompl
                 std::cout << "[";
                 for (float f : bs) {
                     std::cout << f << ", ";
+                }
+                std::cout << "]";
+            }
+
+            void printState(std::vector<int> s) {
+                std::cout << "[";
+                for (int i : s) {
+                    std::cout << i << ", ";
                 }
                 std::cout << "]";
             }

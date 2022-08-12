@@ -13,6 +13,7 @@
 #include "ompl/datastructures/NearestNeighbors.h"
 #include "ompl/geometric/planners/PlannerIncludes.h"
 //#include "ompl/base/World.h"
+#include <boost/config.hpp>
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
 #include <boost/graph/graphviz.hpp>
@@ -112,9 +113,14 @@ namespace ompl
             typedef boost::graph_traits<Graph>::vertex_descriptor VertexTrait;
             typedef boost::graph_traits<Graph>::edge_descriptor EdgeTrait;
 
+            typedef boost::adjacency_list< boost::listS, boost::vecS, boost::bidirectionalS, VertexStruct, EdgeStruct > GraphD;
+            typedef boost::graph_traits<GraphD>::vertex_descriptor VertexTraitD;
+            typedef boost::graph_traits<GraphD>::edge_descriptor EdgeTraitD;
+
             void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
 
             void saveGraph(Graph g, std::string name, bool useLabels);
+            void saveGraph(GraphD g, std::string name, bool useLabels);
 
             /** \brief State sampler */
             base::StateSamplerPtr sampler_;
@@ -129,7 +135,8 @@ namespace ompl
             /** \brief The random number generator */
             RNG rng_;
 
-            Graph pathTree;
+            GraphD pathTree;
+            std::vector<VertexTraitD> pathTreeFinalStates;
         };
     }
 }
