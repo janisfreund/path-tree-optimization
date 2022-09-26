@@ -71,6 +71,9 @@ namespace ompl
             /** \brief Constructor */
             StateSampler(const StateSpace *space) : space_(space)
             {
+                // for debugging
+                rng_.setSeed(0);
+                rng_.setLocalSeed(0);
             }
 
             virtual ~StateSampler() = default;

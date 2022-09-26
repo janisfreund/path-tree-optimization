@@ -195,7 +195,7 @@ namespace ompl
                 std::vector<std::vector<float>> validBeliefs;
                 for (int i = 0; i < static_cast<int>(beliefStates_.size()); i++) {
                     bool isValid = true;
-                    for (int n = 0; n < getNumObjects(); n++) {
+                    for (int n = 0; n < getNumWorldStates(); n++) {
                         if (beliefStates_.at(i).at(n) > 0 && (std::find(worldValidities.begin(), worldValidities.end(), n) == worldValidities.end())) {
                             isValid = false;
                         }
@@ -248,7 +248,7 @@ namespace ompl
                 std::cout << "]";
             }
 
-            void printState(std::vector<int> s) {
+            void printStateFromInt(std::vector<int> s) {
                 std::cout << "[";
                 for (int i : s) {
                     std::cout << i << ", ";

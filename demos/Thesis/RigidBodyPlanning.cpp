@@ -75,21 +75,21 @@ public:
                 if ((pos.at(0) - (len.at(0) / 2) <= x && x <= pos.at(0) + (len.at(0) / 2)) ||
                     (pos.at(1) - (len.at(1) / 2) <= y && y <= pos.at(1) + (len.at(1) / 2)) ||
                     (pos.at(2) - (len.at(2) / 2) <= z && z <= pos.at(2) + (len.at(2) / 2))) {
-                    std::cout << x << ", " << y << ", " << z << ": Not valid in world ";
-                    for (int n = 0; n < world.getNumObjects(); n++) {
-                        std::cout << world.getState().at(n);
-                    }
-                    std::cout << std::endl;
+//                    std::cout << x << ", " << y << ", " << z << ": Not valid in world ";
+//                    for (int n = 0; n < world.getNumObjects(); n++) {
+//                        std::cout << world.getState().at(n);
+//                    }
+//                    std::cout << std::endl;
                     return false;
                 }
             }
             i++;
         }
-        std::cout << x << ", " << y << ", " << z << ": Valid in world ";
-        for (int i = 0; i < world.getNumObjects(); i++) {
-            std::cout << world.getState().at(i);
-        }
-        std::cout << std::endl;
+//        std::cout << x << ", " << y << ", " << z << ": Valid in world ";
+//        for (int i = 0; i < world.getNumObjects(); i++) {
+//            std::cout << world.getState().at(i);
+//        }
+//        std::cout << std::endl;
         return true;
     }
 
@@ -167,7 +167,7 @@ public:
         pdef->print(std::cout);
 
         // attempt to solve the problem within one second of planning time
-        ob::PlannerStatus solved = planner->ob::Planner::solve(5.0);
+        ob::PlannerStatus solved = planner->ob::Planner::solve(20.0);
 
         if (solved) {
             // get the goal representation from the problem definition (not the same as the goal state)

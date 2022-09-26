@@ -17,6 +17,7 @@
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
 #include <boost/graph/graphviz.hpp>
+#include <chrono>
 
 namespace ompl
 {
@@ -45,6 +46,10 @@ namespace ompl
                         nn_.at(i).reset(tools::SelfConfig::getDefaultNearestNeighbors<Motion *>(this));
                     nn_.at(i)->setDistanceFunction([this](const Motion *a, const Motion *b) { return distanceFunction(a, b); });
                 }
+
+                // for debugging
+                rng_.setSeed(0);
+                rng_.setLocalSeed(0);
             }
 
             virtual void clear(void)
@@ -120,7 +125,7 @@ namespace ompl
             void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
 
             void saveGraph(Graph g, std::string name, bool useLabels);
-            void saveGraph(GraphD g, std::string name, bool useLabels);
+            void saveGraph(GraphD g, std::string name, bool useLabels, bool usePos);
 
             /** \brief State sampler */
             base::StateSamplerPtr sampler_;

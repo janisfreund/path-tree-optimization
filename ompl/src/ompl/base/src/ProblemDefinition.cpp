@@ -63,7 +63,8 @@ namespace ompl
                 int index = solutions_.size();
                 solutions_.push_back(s);
                 solutions_.back().index_ = index;
-                std::sort(solutions_.begin(), solutions_.end());
+                // TODO commented because solutions shouldnt be sorted for debugging
+                // std::sort(solutions_.begin(), solutions_.end());
             }
 
             void clear()
