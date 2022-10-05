@@ -170,6 +170,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             std::cout << "#nearest: " << static_cast<int>(nmotionVec.size()) << std::endl;
 
             // iterate over all nearest motions
+            bool motionAdded = false;
             for (Motion *nmotion : nmotionVec) {
                 std::cout << "Nearest motion from " << randomGraphIdx << ": " << nmotion->nodeIdx << std::endl;
                 // check if motion is valid
@@ -183,7 +184,11 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     si_->copyState(motion->state, dstate);
                     motion->parent = nmotion;
                     motion->nodeIdx = randomGraphIdx;
-                    nn_.at(worldIdx)->add(motion);
+                    // only add motion with same state once to nn
+                    if (!motionAdded) {
+                        nn_.at(worldIdx)->add(motion);
+                        motionAdded = true;
+                    }
 
                     // add new edge to random graph if it does not yet exist; otherwise push back valid world idx
                     if (parentNodes.find(motion->parent->nodeIdx) == parentNodes.end()) {
@@ -230,6 +235,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     const auto *parent3D =
                             motion->parent->state->as<ompl::base::RealVectorStateSpace::StateType>();
 
+                    // TODO can destroy everything
                     nmotion = motion;
 
 //                    std::cout << "New motion added to world " << worldIdx << " from state [" << parent3D->values[0]
@@ -238,26 +244,32 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                              << state3D->values[0] << ", "
 //                              << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
                 }
-
-                // check if solution is found
-                bool sat = goal->isSatisfied(nmotion->state, &dist);
+                bool sat = goal->isSatisfied(dstate, &dist);
                 if (sat) {
                     solution[worldIdx] = nmotion;
-                    randomGraph[randomGraphIdx].fontcolor = "blue";
-                    randomGraphFinalStates.push_back(randomGraphIdx);
-                    bool allWorldsSolved = true;
-                    for (Motion *s: solution) {
-                        if (s == nullptr) {
-                            allWorldsSolved = false;
-                            break;
-                        }
-                    }
-                    if (allWorldsSolved) {
-                        flag = true;
-                        break;
-                    }
+//                    bool allWorldsSolved = true;
+//                    for (Motion *s: solution) {
+//                        if (s == nullptr) {
+//                            allWorldsSolved = false;
+//                            break;
+//                        }
+//                    }
+//                    if (allWorldsSolved) {
+//                        flag = true;
+//                        break;
+//                    }
                 }
             }
+        }
+
+        // check if solution is found
+        bool sat = goal->isSatisfied(dstate, &dist);
+        if (sat) {
+//            const auto *state3D =
+//                    dstate->as<ompl::base::RealVectorStateSpace::StateType>();
+//            std::cout << "Goal satisfied with state " << randomGraphIdx << ": [" << state3D->values[0] << ", " << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
+            randomGraph[randomGraphIdx].fontcolor = "blue";
+            randomGraphFinalStates.push_back(randomGraphIdx);
         }
 
         if (flag && terminateIfSolutionFound) {
@@ -629,6 +641,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
         // return solution path
         for (VertexTraitD v : pathTreeFinalStates) {
+            const auto *state3D =
+                    pathTree[v].state->as<ompl::base::RealVectorStateSpace::StateType>();
+            std::cout << "Goal satisfied with state " << v << ": [" << state3D->values[0] << ", " << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
             auto path(std::make_shared<PathGeometric>(si_));
             std::vector<base::State*> pathR;
             VertexTraitD currNode = v;
@@ -682,6 +697,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     timeTotal = (std::chrono::duration_cast<std::chrono::milliseconds>(t_total_end - t_total_start).count()) / 1000.0;
 
     std::cout << std::endl << std::endl;
+    std::cout << "Number of sampled states: " << static_cast<int>(randomGraphVertices.size()) << std::endl;
     std::cout << "Total time: " << timeTotal << "s" << std::endl;
     std::cout << "Sampling time: " << timeSampling << "s" << std::endl;
     std::cout << "Check motion time: " << timeCheckMotion << "s" << std::endl;

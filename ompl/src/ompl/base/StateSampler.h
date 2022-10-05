@@ -72,8 +72,8 @@ namespace ompl
             StateSampler(const StateSpace *space) : space_(space)
             {
                 // for debugging
-                rng_.setSeed(0);
-                rng_.setLocalSeed(0);
+                rng_.setSeed(42);
+                rng_.setLocalSeed(42);
             }
 
             virtual ~StateSampler() = default;

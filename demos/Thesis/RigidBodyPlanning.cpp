@@ -45,6 +45,7 @@
 #include "ompl/base/World.h"
 
 const int NUM_OBJECTS = 2;
+const double SOLVE_TIME = 10.0;
 
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
@@ -167,7 +168,7 @@ public:
         pdef->print(std::cout);
 
         // attempt to solve the problem within one second of planning time
-        ob::PlannerStatus solved = planner->ob::Planner::solve(20.0);
+        ob::PlannerStatus solved = planner->ob::Planner::solve(SOLVE_TIME);
 
         if (solved) {
             // get the goal representation from the problem definition (not the same as the goal state)

@@ -48,8 +48,8 @@ namespace ompl
                 }
 
                 // for debugging
-                rng_.setSeed(0);
-                rng_.setLocalSeed(0);
+                rng_.setSeed(42);
+                rng_.setLocalSeed(42);
             }
 
             virtual void clear(void)
