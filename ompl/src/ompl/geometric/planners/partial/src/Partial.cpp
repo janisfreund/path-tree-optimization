@@ -21,6 +21,63 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // ensures that there is at least one input state and a ompl::base::Goal object specified
     std::cout << "Started solving process using planner Partial.\n";
 
+    bool changeableFinalStates = true;
+
+    // define final states for each world TODO
+    std::vector<base::ScopedState<base::RealVectorBeliefStateSpace> *> goalStates;
+
+    base::ScopedState<base::RealVectorBeliefStateSpace> goal1(si_->getStateSpace());
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 2.844;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goalStates.push_back(&goal1);
+
+    base::ScopedState<base::RealVectorBeliefStateSpace> goal2(si_->getStateSpace());
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.042;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goalStates.push_back(&goal2);
+
+    base::ScopedState<base::RealVectorBeliefStateSpace> goal3(si_->getStateSpace());
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.045;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goalStates.push_back(&goal3);
+
+    base::ScopedState<base::RealVectorBeliefStateSpace> goal4(si_->getStateSpace());
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 3.009;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goalStates.push_back(&goal4);
+
     bool extendedOutput = false;
     bool terminateIfSolutionFound = false;
 
@@ -39,11 +96,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::chrono::steady_clock::time_point t_total_start = std::chrono::steady_clock::now();
 
     checkValidity();
-
-    // get a handle to the Goal from the ompl::base::ProblemDefinition member, pdef_
-    base::Goal *goal = pdef_->getGoal().get();
-    // get sampleable region from goal
-    auto *goal_s = dynamic_cast<ompl::base::GoalSampleableRegion *>(goal);
 
     // Ensure that we have a state sampler
     if (!sampler_)
@@ -84,6 +136,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 double y = (static_cast<const base::RealVectorStateSpace::StateType *>(randomGraph[v].state)->values[1]) * 10;
                 std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
                 randomGraph[v].pos = pos_str;
+                randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
                 randomGraphVertices.push_back(v);
             }
         }
@@ -109,16 +162,24 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // if it does, terminate planning.
     std::chrono::steady_clock::time_point t_sampling_start = std::chrono::steady_clock::now();
     while (!ptc()) {
+        // Sample world
+        int sampledWorldIdx = rand() % world->getNumWorldStates();
+        world->setState(sampledWorldIdx);
+
+        // set goal to goal state of the sampled world
+        pdef_->setGoalState(*goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
+
+        // get a handle to the Goal from the ompl::base::ProblemDefinition member, pdef_
+        base::Goal *goal = pdef_->getGoal().get();
+        // get sampleable region from goal
+        auto *goal_s = dynamic_cast<ompl::base::GoalSampleableRegion *>(goal);
+
         // Sample a new state uniformly or sample the goal
         std::cout << "New state sampled.\n";
         if ((goal_s != nullptr) && rng_.uniform01() < goalBias_ && goal_s->canSample())
             goal_s->sampleGoal(rstate);
         else
             sampler_->sampleUniform(rstate);
-
-        // Sample world
-        int sampledWorldIdx = rand() % world->getNumWorldStates();
-        world->setState(sampledWorldIdx);
 
         // Check if sampled state is valid in sampled world
         if (!si_->isValid(rstate, *world)) {
@@ -140,6 +201,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         // TODO currently using camera image taken in a world in which all objects are present
         world->setState(world->getNumWorldStates() - 1);
         randomGraph[v].observableObjects = si_->targetFound(dstate);
+
+        randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
 
         randomGraphVertices.push_back(v);
 
@@ -259,6 +322,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                        break;
 //                    }
                 }
+            }
+
+            if (motionAdded && goal->isSatisfied(dstate, &dist)) {
+                randomGraph[randomGraphIdx].isFinal[worldIdx] = true;
             }
         }
 

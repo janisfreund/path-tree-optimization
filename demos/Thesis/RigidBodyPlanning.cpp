@@ -44,7 +44,7 @@
 #include "ompl/geometric/planners/partial/Partial.h"
 #include "ompl/base/World.h"
 
-const int NUM_OBJECTS = 2;
+const int NUM_OBJECTS = 4;
 const double SOLVE_TIME = 10.0;
 
 namespace ob = ompl::base;
@@ -110,9 +110,16 @@ public:
         space->addDimension();
         space->addDimension();
         space->addDimension();
+        space->addDimension();
+        space->addDimension();
+        space->addDimension();
+        space->addDimension();
+        space->addDimension();
+        space->addDimension();
+        space->addDimension();
 
         // set the bounds for the R^3 part of SE(3)
-        ob::RealVectorBounds bounds(3);
+        ob::RealVectorBounds bounds(10);
         bounds.setLow(-1);
         bounds.setHigh(1);
 
@@ -126,7 +133,7 @@ public:
 
         si->setStateValidityAndTargetChecker(isStateValid, targetFound);
 
-        si->initWorld(NUM_OBJECTS);
+        si->initWorld(NUM_OBJECTS, true);
 
         // create a random start state
         ob::ScopedState<> start(space);
@@ -134,6 +141,13 @@ public:
         start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
         start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = -0.8;
         start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
         std::cout << "START: " << start << std::endl;
 
         // create a random goal state
@@ -142,6 +156,13 @@ public:
         goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
         goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0.8;
         goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
         std::cout << "GOAL: " << goal << std::endl;
 
         // create a problem instance

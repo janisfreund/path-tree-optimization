@@ -105,6 +105,7 @@ namespace ompl
                 std::vector<int> observableObjects;
                 std::vector<float> beliefState;
                 std::vector<int> beliefChildren;
+                std::vector<bool> isFinal;
             };
 
             struct EdgeStruct

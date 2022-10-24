@@ -196,8 +196,8 @@ namespace ompl
 
             void setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc);
 
-            void initWorld(int numObjects) {
-                world_ = new World(numObjects);
+            void initWorld(int numObjects, bool changeableFinalStates) {
+                world_ = new World(numObjects, changeableFinalStates);
             }
 
             World* getWorld() {

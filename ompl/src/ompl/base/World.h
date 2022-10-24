@@ -65,11 +65,25 @@ namespace ompl
         public:
             World() {}
 
-            World(int numObjects) {
+            World(int numObjects, bool changeableFinalStates) {
                 numObjects_ = numObjects;
 
                 /// fill worldStates with all possible combinations
-                generateCombinations(std::vector<ObjectState>{}, numObjects, 0);
+                if (changeableFinalStates) {
+                    for (int i = 0; i < numObjects; i++) {
+                        std::vector<ObjectState> ws;
+                        for (int n = 0; n < numObjects; n++) {
+                            if (i == n) {
+                                ws.push_back(EXISTENT);
+                            } else {
+                                ws.push_back(NONEXISTENT);
+                            }
+                        }
+                        worldStates_.push_back(ws);
+                    }
+                } else {
+                    generateCombinations(std::vector<ObjectState>{}, numObjects, 0);
+                }
 
                 // fill beliefStates with all possible combinations
                 std::vector<float> initialBelief;
