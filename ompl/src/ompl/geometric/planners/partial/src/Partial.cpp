@@ -20,6 +20,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // make sure the planner is configured correctly; ompl::base::Planner::checkValidity
     // ensures that there is at least one input state and a ompl::base::Goal object specified
     std::cout << "Started solving process using planner Partial.\n";
+    std::cout << "Using newest version\n";
 
     bool changeableFinalStates = true;
 
@@ -556,7 +557,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             double newCost;
             // if edge is action edge -> Bellman update
             if (!beliefGraph[e].isWorldConnection) {
-                if (isinf(costs[v])) {
+                if (std::isinf(costs[v])) {
                     newCost = std::numeric_limits<double>::infinity();
                 }
                 else {

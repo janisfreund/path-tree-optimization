@@ -205,7 +205,7 @@ public:
 
 private:
     //static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}};
-    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}};
+    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}};
 };
 
 int main(int /*argc*/, char ** /*argv*/)

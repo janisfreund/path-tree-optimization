@@ -197,6 +197,12 @@ namespace ompl
                     std::vector<float> beliefs = calcBelief(oldBeliefs, std::vector<int>{observableObject}, std::vector<ObjectState>{ObjectState(i)});
                     newBeliefs.push_back(beliefs);
                 }
+
+                //debug
+                if (newBeliefs.at(1).empty() && !newBeliefs.at(0).empty()) {
+                    std::cout << "...";
+                }
+
                 // check if beliefs changed
                 if (!newBeliefs.at(0).empty()) {
                     return newBeliefs;
@@ -285,7 +291,7 @@ namespace ompl
                 }
             }
 
-            // get world indices in which an object has a certain object state
+            // get world indices in which an object DOESN'T have a certain object state
             std::set<int> getNegativeWorldIndices(int objIndx, ObjectState state) {
                 std::set<int> indices;
                 for (int i = 0; i < getNumWorldStates(); i++) {
@@ -327,16 +333,20 @@ namespace ompl
                 std::vector<float> newBelief;
                 std::set<int> invalidWorldIndices;
                 float deletedBeliefs = 0;
+                // get world indices of worlds in which observed object is not in observed state
                 for (int i = 0; i < static_cast<int>(observableObjects.size()); i++) {
                     std::set<int> newSet = getNegativeWorldIndices(observableObjects.at(i), states.at(i));
                     invalidWorldIndices.insert(newSet.begin(), newSet.end());
                 }
+                // calculate sum of beliefs of invalid worlds
                 for (int idx : invalidWorldIndices) {
                     deletedBeliefs += oldBeliefs.at(idx);
                 }
-                if (deletedBeliefs == 1) {
+                // check if old belief is final belief
+                if (abs(1 - deletedBeliefs) < 1e-6) {
                     return std::vector<float>{};
                 }
+                // update beliefs
                 float multiplier = 1 / (1. - deletedBeliefs);
                 bool beliefsChanged = false;
                 for (int i = 0; i < getNumWorldStates(); i++) {
@@ -347,7 +357,9 @@ namespace ompl
                         }
                     }
                     else {
-                        newBelief.push_back(oldBeliefs.at(i) * multiplier);
+                        float newValue = oldBeliefs.at(i) * multiplier;
+                        if (newValue )
+                        newBelief.push_back(newValue);
                     }
                 }
                 if (beliefsChanged) {
