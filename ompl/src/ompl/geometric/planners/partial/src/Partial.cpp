@@ -79,6 +79,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
     goalStates.push_back(&goal4);
 
+    std::vector<double> distancesDirect;
+    std::vector<double> distancesPlanned(static_cast<int>(goalStates.size()));
+
     bool extendedOutput = false;
     bool terminateIfSolutionFound = false;
 
@@ -115,6 +118,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     // get input states with PlannerInputStates helper, pis_
     while (const base::State *st = pis_.nextStart()) {
+        // compute distancesDirect from start state to all possible goal states
+        for (base::ScopedState<base::RealVectorBeliefStateSpace> *gState : goalStates) {
+            distancesDirect.push_back(gState->distance(st));
+        }
         // fill nn structure with starting state for all possible worlds
         for (int i = 0; i < numWorldStates; i++) {
             auto *motion = new Motion(si_);
@@ -137,7 +144,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 double y = (static_cast<const base::RealVectorStateSpace::StateType *>(randomGraph[v].state)->values[1]) * 10;
                 std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
                 randomGraph[v].pos = pos_str;
-                randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
+//                randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
                 randomGraphVertices.push_back(v);
             }
         }
@@ -203,7 +210,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         world->setState(world->getNumWorldStates() - 1);
         randomGraph[v].observableObjects = si_->targetFound(dstate);
 
-        randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
+//        randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
 
         randomGraphVertices.push_back(v);
 
@@ -325,9 +332,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 }
             }
 
-            if (motionAdded && goal->isSatisfied(dstate, &dist)) {
-                randomGraph[randomGraphIdx].isFinal[worldIdx] = true;
-            }
+//            if (motionAdded && goal->isSatisfied(dstate, &dist)) {
+//                randomGraph[randomGraphIdx].isFinal[worldIdx] = true;
+//            }
         }
 
         // check if solution is found
@@ -337,6 +344,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                    dstate->as<ompl::base::RealVectorStateSpace::StateType>();
 //            std::cout << "Goal satisfied with state " << randomGraphIdx << ": [" << state3D->values[0] << ", " << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
             randomGraph[randomGraphIdx].fontcolor = "blue";
+            randomGraph[randomGraphIdx].finalSateIdx = sampledWorldIdx;
             randomGraphFinalStates.push_back(randomGraphIdx);
         }
 
@@ -365,6 +373,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     // compute which nodes should be added to different beliefs
     bool activeNodes[static_cast<int>(world->getAllBeliefStates().size())][static_cast<int>(randomGraphVertices.size())];
+    // beliefs x random graph vertices, init with false
     for (int i = 0; i < static_cast<int>(world->getAllBeliefStates().size()); i++) {
         for (int n = 0; n < static_cast<int>(randomGraphVertices.size()); n++) {
             activeNodes[i][n] = false;
@@ -402,8 +411,15 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 beliefGraph[v].state = randomGraph[node].state;
                 beliefGraph[v].observableObjects = randomGraph[node].observableObjects;
                 beliefGraph[v].fontcolor = randomGraph[node].fontcolor;
-                beliefGraph[v].color = colors[idx % static_cast<int>(colors.size())];
+                beliefGraph[v].finalSateIdx = randomGraph[node].finalSateIdx;
                 beliefGraph[v].beliefState = b;
+                // check if final random graph node is also final in belief
+                if (beliefGraph[v].fontcolor == "blue") {
+                    if (!fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3) {
+                        beliefGraph[v].fontcolor = "";
+                    }
+                }
+                beliefGraph[v].color = colors[idx % static_cast<int>(colors.size())];
                 beliefGraph[v].pos = randomGraph[node].pos;
                 beliefGraph[v].label = std::to_string(nodesCount);
                 beliefGraphVertices[idx].push_back(v);
@@ -415,6 +431,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 singleBeliefGraph[idx][a].state = randomGraph[node].state;
                 singleBeliefGraph[idx][a].observableObjects = randomGraph[node].observableObjects;
                 singleBeliefGraph[idx][a].fontcolor = randomGraph[node].fontcolor;
+                singleBeliefGraph[idx][a].finalSateIdx = randomGraph[node].finalSateIdx;
                 singleBeliefGraph[idx][a].color = colors[idx % static_cast<int>(colors.size())];
                 singleBeliefGraph[idx][a].beliefState = b;
                 singleBeliefGraph[idx][a].pos = randomGraph[node].pos;
@@ -532,10 +549,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 final = true;
             }
         }
-        if(beliefGraph[v].fontcolor == "blue" /*&& final*/) {
+        if(beliefGraph[v].fontcolor == "blue" && fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3/*&& final*/) {
             costs.push_back(0);
             pq.push(std::make_pair(0, v));
-            std::cout << "New goal state added: " << std::endl;
         }
         // all other states have inf costs
         else {
@@ -620,10 +636,11 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     VertexTrait v = add_vertex(pathTree);
     pathTree[v].state = beliefGraph[currVertex].state;
     pathTree[v].fontcolor = beliefGraph[currVertex].fontcolor;
+    pathTree[v].finalSateIdx = beliefGraph[currVertex].finalSateIdx;
     pathTree[v].color = beliefGraph[currVertex].color;
     pathTree[v].beliefState = beliefGraph[currVertex].beliefState;
     pathTree[v].label = beliefGraph[currVertex].label;
-    getSpaceInformation()->getStateSpace()->printState(pathTree[v].state, std::cout);
+//    getSpaceInformation()->getStateSpace()->printState(pathTree[v].state, std::cout);
     pathTree[v].pos = beliefGraph[currVertex].pos;
     constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{});
 
@@ -709,33 +726,49 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
         // return solution path
         for (VertexTraitD v : pathTreeFinalStates) {
+            double dis = 0;
+            int planIdx = pathTree[v].finalSateIdx;
             const auto *state3D =
                     pathTree[v].state->as<ompl::base::RealVectorStateSpace::StateType>();
-            std::cout << "Goal satisfied with state " << v << ": [" << state3D->values[0] << ", " << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
+            std::cout << "\nGoal satisfied with state " << v << ": [" << state3D->values[0] << ", " << state3D->values[1]
+                        << ", " << state3D->values[2] << "]" << " which is final state " << pathTree[v].finalSateIdx << std::endl;
+            std::cout << "Solution path in reversed order (form goal to start):" << std::endl;
             auto path(std::make_shared<PathGeometric>(si_));
             std::vector<base::State*> pathR;
             VertexTraitD currNode = v;
             while (currNode != 0) {
                 std::cout << "Append to path: ";
                 getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
+                std::cout << " with belief state ";
+                world->printBelief(pathTree[currNode].beliefState);
+                std::cout << std::endl;
                 //path->append(pathTree[currNode].state);
                 pathR.push_back(pathTree[currNode].state);
                 GraphD::in_edge_iterator it, end;
                 std::tie(it, end) = boost::in_edges(currNode, pathTree);
                 for (; it != end; it++) {
                     // TODO check if only 1 parent
-                    currNode = it->m_source;
+                    VertexTraitD nextNode = it->m_source;
+                    dis += si_->getStateSpace()->distance(pathTree[currNode].state, pathTree[nextNode].state);
+                    currNode = nextNode;
                 }
             }
             //path->append(pathTree[currNode].state);
             pathR.push_back(pathTree[currNode].state);
+            std::cout << "Append to path: ";
+            getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
+            std::cout << " with belief state ";
+            world->printBelief(pathTree[currNode].beliefState);
+            std::cout << std::endl;
+
+            distancesPlanned.at(planIdx) = dis;
             for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
                 path->append(pathR[i]);
             }
-            std::cout << "Found solution for belief ";
-            world->printBelief(pathTree[v].beliefState);
-            std::cout << " with goal state " << v << ":" << std::endl;
-            path->print(std::cout);
+//            std::cout << "Found solution for belief ";
+//            world->printBelief(pathTree[v].beliefState);
+//            std::cout << " with goal state " << v << ":" << std::endl;
+//            path->print(std::cout);
             pdef_->addSolutionPath(path);
         }
     }
@@ -774,6 +807,18 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::cout << "Optimal path tree creation time: " << timeOptimalPathTree << "s" << std::endl;
     std::cout << std::endl << std::endl;
 
+    std::cout << "Benchmark:" << std::endl;
+    int disIdx = 0;
+    for (int i = 0; i < static_cast<int>(distancesDirect.size()); i++) {
+        std::cout << "----- Goal State " << disIdx << " -----" << std::endl;
+        if (returnPathTree && static_cast<int>(distancesPlanned.size()) > i) {
+            std::cout << "Distance of planned path: " << distancesPlanned.at(i) << std::endl;
+        }
+        std::cout << "Optimal distance without collision: " << distancesDirect.at(i) << std::endl;
+        disIdx++;
+    }
+    std::cout << std::endl << std::endl;
+
     // clear memory
     if (rmotion->state != nullptr)
         si_->freeState(rmotion->state);
@@ -801,13 +846,14 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                         VertexTraitD w = add_vertex(pathTree);
                         pathTree[w].state = beliefGraph[it.dereference()].state;
                         pathTree[w].fontcolor = beliefGraph[it.dereference()].fontcolor;
+                        pathTree[w].finalSateIdx = beliefGraph[it.dereference()].finalSateIdx;
                         pathTree[w].color = beliefGraph[it.dereference()].color;
                         pathTree[w].beliefState = beliefGraph[it.dereference()].beliefState;
                         pathTree[w].label = beliefGraph[it.dereference()].label;
                         if (pathTree[w].fontcolor == "blue") {
                             pathTreeFinalStates.push_back(w);
                         }
-                        std::cout << "State " << pathTree[w].label << std::endl;
+//                        std::cout << "State " << pathTree[w].label << std::endl;
                         pathTree[w].pos = beliefGraph[it.dereference()].pos;
                         std::pair<EdgeTraitD, bool> p = add_edge(v, w, pathTree);
                         EdgeTraitD e = p.first;
@@ -829,13 +875,14 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         VertexTraitD u = add_vertex(pathTree);
         pathTree[u].state = beliefGraph[bestVertex].state;
         pathTree[u].fontcolor = beliefGraph[bestVertex].fontcolor;
+        pathTree[u].finalSateIdx = beliefGraph[bestVertex].finalSateIdx;
         pathTree[u].color = beliefGraph[bestVertex].color;
         pathTree[u].beliefState = beliefGraph[bestVertex].beliefState;
         pathTree[u].label = beliefGraph[bestVertex].label;
         if (pathTree[u].fontcolor == "blue") {
             pathTreeFinalStates.push_back(u);
         }
-        std::cout << "State " << pathTree[u].label << std::endl;
+//        std::cout << "State " << pathTree[u].label << std::endl;
         pathTree[u].pos = beliefGraph[bestVertex].pos;
         std::pair<EdgeTraitD , bool> p = add_edge(v, u, pathTree);
         v = u;

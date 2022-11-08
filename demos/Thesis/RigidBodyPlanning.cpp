@@ -45,7 +45,7 @@
 #include "ompl/base/World.h"
 
 const int NUM_OBJECTS = 4;
-const double SOLVE_TIME = 10.0;
+const double SOLVE_TIME = 0.1;
 
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
@@ -120,8 +120,8 @@ public:
 
         // set the bounds for the R^3 part of SE(3)
         ob::RealVectorBounds bounds(10);
-        bounds.setLow(-1);
-        bounds.setHigh(1);
+        bounds.setLow(-M_PI);
+        bounds.setHigh(M_PI);
 
         space->setBounds(bounds);
 
@@ -135,19 +135,25 @@ public:
 
         si->initWorld(NUM_OBJECTS, true);
 
+        // create POObjects based on NUM_OBJECTS
+        for (int i = 0; i < NUM_OBJECTS; i++) {
+            std::pair<std::vector<double>, std::vector<double>> obj = std::make_pair(std::vector<double>({0, 0, 0}), std::vector<double>({0.02, 0.02, 0.02}));
+            POObjects.push_back(obj);
+        }
+
         // create a random start state
         ob::ScopedState<> start(space);
 //    start.random();
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = -0.8;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = -0.8;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
         std::cout << "START: " << start << std::endl;
 
         // create a random goal state
@@ -205,7 +211,9 @@ public:
 
 private:
     //static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}};
-    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}};
+//    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}};
+//    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects = {{{0, 0, 0}, {0.02, 0.02, 0.02}}, {{0, 0, 0}, {0.02, 0.02, 0.02}}};
+    static inline std::vector<std::pair<std::vector<double>, std::vector<double>>> POObjects;
 };
 
 int main(int /*argc*/, char ** /*argv*/)

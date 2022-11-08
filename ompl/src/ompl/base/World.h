@@ -6,6 +6,7 @@
 #include <functional>
 #include <iostream>
 #include <algorithm>
+#include "math.h"
 
 namespace ompl
 {
@@ -65,45 +66,7 @@ namespace ompl
         public:
             World() {}
 
-            World(int numObjects, bool changeableFinalStates) {
-                numObjects_ = numObjects;
-
-                /// fill worldStates with all possible combinations
-                if (changeableFinalStates) {
-                    for (int i = 0; i < numObjects; i++) {
-                        std::vector<ObjectState> ws;
-                        for (int n = 0; n < numObjects; n++) {
-                            if (i == n) {
-                                ws.push_back(EXISTENT);
-                            } else {
-                                ws.push_back(NONEXISTENT);
-                            }
-                        }
-                        worldStates_.push_back(ws);
-                    }
-                } else {
-                    generateCombinations(std::vector<ObjectState>{}, numObjects, 0);
-                }
-
-                // fill beliefStates with all possible combinations
-                std::vector<float> initialBelief;
-                for (int i = 0; i < getNumWorldStates(); i++) {
-                    initialBelief.push_back(1. / getNumWorldStates());
-                }
-                std::vector<int> initialObjects;
-                for (int i = 0; i < getNumObjects(); i++) {
-                    initialObjects.push_back(i);
-                }
-                beliefStates_.push_back(initialBelief);
-                calcReachableBeliefStates(initialBelief, initialObjects);
-                for (int i = 0; i < getNumWorldStates(); i++) {
-                    std::vector<float> definiteState(getNumWorldStates(), 0);
-                    definiteState.at(i) = 1;
-                    beliefStates_.push_back(definiteState);
-                }
-
-                // targetFound_ = targetFound;
-            }
+            World(int numObjects, bool changeableFinalStates);
 
             virtual ~World() = default;
 
@@ -175,59 +138,9 @@ namespace ompl
                 return false;
             }
 
-            std::vector<BeliefState> observe(BeliefState oldBeliefs, int observableObject) {
-                for (float f : oldBeliefs) {
-                    if (f == 1) {
-                        return std::vector<std::vector<float>>{oldBeliefs};
-                    }
-                    else if (f != 0) {
-                        break;
-                    }
-                }
+            std::vector<BeliefState> observe(BeliefState oldBeliefs, int observableObject);
 
-                std::vector<std::vector<float>> newBeliefs;
-//                std::vector<std::vector<ObjectState>> *combinations;
-//                generateCombinations(combinations, std::vector<ObjectState>{}, static_cast<int>(observableObjects.size()), 0);
-//                std::vector<std::vector<ObjectState>> combs = *combinations;
-//                for (std::vector<ObjectState> states : *combinations) {
-//                    std::vector<float> beliefs = calcBelief(oldBeliefs, observableObjects, states);
-//                    newBeliefs.push_back(beliefs);
-//                }
-                for (int i = 0; i < 2; i++) {
-                    std::vector<float> beliefs = calcBelief(oldBeliefs, std::vector<int>{observableObject}, std::vector<ObjectState>{ObjectState(i)});
-                    newBeliefs.push_back(beliefs);
-                }
-
-                //debug
-                if (newBeliefs.at(1).empty() && !newBeliefs.at(0).empty()) {
-                    std::cout << "...";
-                }
-
-                // check if beliefs changed
-                if (!newBeliefs.at(0).empty()) {
-                    return newBeliefs;
-                }
-                return std::vector<std::vector<float>>{oldBeliefs};
-            }
-
-            std::pair<std::vector<int>, std::vector<BeliefState>> getCompatibleBeliefs(std::vector<int> worldValidities) {
-                std::vector<int> validIdx;
-                std::vector<std::vector<float>> validBeliefs;
-                for (int i = 0; i < static_cast<int>(beliefStates_.size()); i++) {
-                    bool isValid = true;
-                    for (int n = 0; n < getNumWorldStates(); n++) {
-                        if (beliefStates_.at(i).at(n) > 0 && (std::find(worldValidities.begin(), worldValidities.end(), n) == worldValidities.end())) {
-                            isValid = false;
-                        }
-                    }
-                    if (isValid) {
-                        validIdx.push_back(i);
-                        validBeliefs.push_back(beliefStates_.at(i));
-                    }
-                }
-                std::cout << "New getBelief function used." << std::endl;
-                return std::make_pair(validIdx, validBeliefs);
-            }
+            std::pair<std::vector<int>, std::vector<BeliefState>> getCompatibleBeliefs(std::vector<int> worldValidities);
 
             int getBeliefIdx(BeliefState belief) {
                 int idx = 0;
@@ -235,7 +148,7 @@ namespace ompl
                     bool isEqual = true;
                     for (int i = 0; i < getNumWorldStates(); i++) {
                         // std::cout << "#States: " << getNumWorldStates() << "; #Test: " << static_cast<int>(testBelief.size()) << "; #Belief: " << static_cast<int>(belief.size()) << std::endl;
-                        if (testBelief.at(i) != belief.at(i)) {
+                        if (fabs(testBelief.at(i) - belief.at(i)) > 1e-3) {
                             isEqual = false;
                         }
                     }
@@ -277,96 +190,14 @@ namespace ompl
             }
 
         private:
-            void generateCombinations(std::vector<ObjectState> combination, int len, int index) {
-                if (len == index) {
-                    worldStates_.push_back(combination);
-                    return;
-                }
-
-                // TODO be generic, also if enum changes
-                for (int i = 0; i < 2; i++) {
-                    std::vector<ObjectState> comb(combination);
-                    comb.push_back(ObjectState(i));
-                    generateCombinations(comb, len, index+1);
-                }
-            }
+            void generateCombinations(std::vector<ObjectState> combination, int len, int index);
 
             // get world indices in which an object DOESN'T have a certain object state
-            std::set<int> getNegativeWorldIndices(int objIndx, ObjectState state) {
-                std::set<int> indices;
-                for (int i = 0; i < getNumWorldStates(); i++) {
-                    // TODO improve
-                    if (worldStates_.at(i).at(objIndx) != state) {
-                        indices.insert(i);
-                    }
-                }
-                return indices;
-            }
+            std::set<int> getNegativeWorldIndices(int objIndx, ObjectState state);
 
-            void calcReachableBeliefStates(std::vector<float> initialBeliefSate, std::vector<int> undiscoveredObjects) {
-                for (int obj : undiscoveredObjects) {
-                    std::vector<std::vector<float>> newBeliefs = observe(initialBeliefSate, obj);
-                    for (std::vector<float> belief : newBeliefs) {
-                        bool isDefinite = false;
-                        for (float b : belief) {
-                            if (b == 1) {
-                                isDefinite = true;
-                            }
-                        }
-                        if (isDefinite) {
-                            continue;
-                        }
-                        beliefStates_.push_back(belief);
-                        std::vector<int> remainingObjects = undiscoveredObjects;
-                        for (std::vector<int>::iterator it = remainingObjects.begin(); it != remainingObjects.end(); ++it) {
-                            if (*it == obj) {
-                                remainingObjects.erase(it);
-                                break;
-                            }
-                        }
-                        calcReachableBeliefStates(belief, remainingObjects);
-                    }
-                }
-            }
+            void calcReachableBeliefStates(std::vector<float> initialBeliefSate, std::vector<int> undiscoveredObjects);
 
-            std::vector<float> calcBelief(std::vector<float> oldBeliefs, std::vector<int> observableObjects, std::vector<ObjectState> states) {
-                std::vector<float> newBelief;
-                std::set<int> invalidWorldIndices;
-                float deletedBeliefs = 0;
-                // get world indices of worlds in which observed object is not in observed state
-                for (int i = 0; i < static_cast<int>(observableObjects.size()); i++) {
-                    std::set<int> newSet = getNegativeWorldIndices(observableObjects.at(i), states.at(i));
-                    invalidWorldIndices.insert(newSet.begin(), newSet.end());
-                }
-                // calculate sum of beliefs of invalid worlds
-                for (int idx : invalidWorldIndices) {
-                    deletedBeliefs += oldBeliefs.at(idx);
-                }
-                // check if old belief is final belief
-                if (abs(1 - deletedBeliefs) < 1e-6) {
-                    return std::vector<float>{};
-                }
-                // update beliefs
-                float multiplier = 1 / (1. - deletedBeliefs);
-                bool beliefsChanged = false;
-                for (int i = 0; i < getNumWorldStates(); i++) {
-                    if (invalidWorldIndices.find(i) != invalidWorldIndices.end()) {
-                        newBelief.push_back(0);
-                        if (oldBeliefs.at(i) != 0) {
-                            beliefsChanged = true;
-                        }
-                    }
-                    else {
-                        float newValue = oldBeliefs.at(i) * multiplier;
-                        if (newValue )
-                        newBelief.push_back(newValue);
-                    }
-                }
-                if (beliefsChanged) {
-                    return newBelief;
-                }
-                return std::vector<float>{};
-            }
+            std::vector<float> calcBelief(std::vector<float> oldBeliefs, std::vector<int> observableObjects, std::vector<ObjectState> states);
 
             int numObjects_;
             std::vector<ObjectState> objectStates_;
