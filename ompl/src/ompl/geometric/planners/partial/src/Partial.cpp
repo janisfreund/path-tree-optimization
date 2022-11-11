@@ -27,56 +27,88 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // define final states for each world TODO
     std::vector<base::ScopedState<base::RealVectorBeliefStateSpace> *> goalStates;
 
+//    base::ScopedState<base::RealVectorBeliefStateSpace> goal1(si_->getStateSpace());
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 2.844;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+//    goalStates.push_back(&goal1);
+//
+//    base::ScopedState<base::RealVectorBeliefStateSpace> goal2(si_->getStateSpace());
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.042;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+//    goalStates.push_back(&goal2);
+//
+//    base::ScopedState<base::RealVectorBeliefStateSpace> goal3(si_->getStateSpace());
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.045;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+//    goalStates.push_back(&goal3);
+//
+//    base::ScopedState<base::RealVectorBeliefStateSpace> goal4(si_->getStateSpace());
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 3.009;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
+//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+//    goalStates.push_back(&goal4);
+
     base::ScopedState<base::RealVectorBeliefStateSpace> goal1(si_->getStateSpace());
     goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 2.844;
     goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
     goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
-    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
+    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
     goalStates.push_back(&goal1);
 
     base::ScopedState<base::RealVectorBeliefStateSpace> goal2(si_->getStateSpace());
     goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.042;
     goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
     goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
-    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
+    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
     goalStates.push_back(&goal2);
 
     base::ScopedState<base::RealVectorBeliefStateSpace> goal3(si_->getStateSpace());
     goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.045;
     goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
     goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
-    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
+    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
     goalStates.push_back(&goal3);
 
     base::ScopedState<base::RealVectorBeliefStateSpace> goal4(si_->getStateSpace());
     goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 3.009;
     goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
     goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
-    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
+    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
     goalStates.push_back(&goal4);
 
     std::vector<double> distancesDirect;

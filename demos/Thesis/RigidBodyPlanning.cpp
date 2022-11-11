@@ -112,14 +112,14 @@ public:
         space->addDimension();
         space->addDimension();
         space->addDimension();
-        space->addDimension();
-        space->addDimension();
-        space->addDimension();
-        space->addDimension();
-        space->addDimension();
+//        space->addDimension();
+//        space->addDimension();
+//        space->addDimension();
+//        space->addDimension();
+//        space->addDimension();
 
         // set the bounds for the R^3 part of SE(3)
-        ob::RealVectorBounds bounds(10);
+        ob::RealVectorBounds bounds(5);
         bounds.setLow(-M_PI);
         bounds.setHigh(M_PI);
 
@@ -147,13 +147,13 @@ public:
         start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
         start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0;
         start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0;
-        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[3] = 0;
+        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[4] = 0;
+//        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[5] = 0;
+//        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[6] = 0;
+//        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[7] = 0;
+//        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[8] = 0;
+//        start->as<ob::RealVectorBeliefStateSpace::StateType>()->values[9] = 0;
         std::cout << "START: " << start << std::endl;
 
         // create a random goal state
@@ -162,13 +162,13 @@ public:
         goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
         goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0.8;
         goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0.8;
-        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
-        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0.8;
-        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0.8;
-        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
-        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[1] = 0.8;
-        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[2] = 0.8;
-        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[0] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.8;
+        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.8;
+//        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.8;
+//        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.8;
+//        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.8;
+//        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[8] = 0.8;
+//        goal->as<ob::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.8;
         std::cout << "GOAL: " << goal << std::endl;
 
         // create a problem instance
