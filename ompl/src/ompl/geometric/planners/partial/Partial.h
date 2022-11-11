@@ -87,6 +87,8 @@ namespace ompl
 
                 /** \brief Stores to which node of the random graph this motion corresponds */
                 int nodeIdx;
+
+                bool isGoal;
             };
 
             /** \brief Compute distance between motions (actually distance between contained states) */
@@ -126,7 +128,7 @@ namespace ompl
 
             void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
 
-            void saveGraph(Graph g, std::string name, bool useLabels);
+            void saveGraph(Graph g, std::string name, bool useLabels, bool usePos);
             void saveGraph(GraphD g, std::string name, bool useLabels, bool usePos);
 
             /** \brief State sampler */
@@ -137,7 +139,8 @@ namespace ompl
 
             /** \brief The fraction of time the goal is picked as the state to expand towards (if such a state is
              * available) */
-            double goalBias_{.05};
+//            double goalBias_{.05};
+            double goalBias_{.2};
 
             /** \brief The random number generator */
             RNG rng_;

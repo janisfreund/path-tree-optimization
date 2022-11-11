@@ -132,6 +132,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 initBelief.push_back(1 / numObjects);
             }
             motion->nodeIdx = 0;
+            motion->isGoal = 0;
             nn_.at(i)->add(motion);
 
             // add start node to random graph once
@@ -255,49 +256,56 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     si_->copyState(motion->state, dstate);
                     motion->parent = nmotion;
                     motion->nodeIdx = randomGraphIdx;
+                    motion->isGoal = goal->isSatisfied(dstate, &dist);
                     // only add motion with same state once to nn
                     if (!motionAdded) {
                         nn_.at(worldIdx)->add(motion);
                         motionAdded = true;
                     }
 
-                    // add new edge to random graph if it does not yet exist; otherwise push back valid world idx
-                    if (parentNodes.find(motion->parent->nodeIdx) == parentNodes.end()) {
-                        std::pair<EdgeTrait, bool> p = add_edge(randomGraphVertices.at(motion->nodeIdx),
-                                                                randomGraphVertices.at(motion->parent->nodeIdx),
-                                                                randomGraph);
-                        EdgeTrait e = p.first;
-                        randomGraph[e].worldValidities.push_back(worldIdx);
-                        randomGraphEdges.push_back(e);
-                        parentNodes.insert(motion->parent->nodeIdx);
+                    // don't connect if both states are goal states
+                    if (!(motion->isGoal && motion->parent->isGoal)) {
+                        // add new edge to random graph if it does not yet exist; otherwise push back valid world idx
+                        if (parentNodes.find(motion->parent->nodeIdx) == parentNodes.end()) {
+                            std::pair<EdgeTrait, bool> p = add_edge(randomGraphVertices.at(motion->nodeIdx),
+                                                                    randomGraphVertices.at(motion->parent->nodeIdx),
+                                                                    randomGraph);
+                            EdgeTrait e = p.first;
+                            randomGraph[e].worldValidities.push_back(worldIdx);
+                            randomGraphEdges.push_back(e);
+                            parentNodes.insert(motion->parent->nodeIdx);
 
-                        std::cout << "New edge added to random graph from " << e.m_source << " to " << e.m_target << std::endl;
-                        std::vector<int> vals = randomGraph[e].worldValidities;
-                        std::cout << "Current world validities: ";
-                        for (int val : vals) {
-                            std::cout << val << ", ";
-                        }
-                        std::cout << std::endl << std::endl;
-
-                    } else {
-                        int edgeIdx = 0;
-                        for (; edgeIdx < static_cast<int>(randomGraphEdges.size()); edgeIdx++) {
-                            if ((randomGraphEdges.at(edgeIdx).m_source == motion->nodeIdx &&
-                                randomGraphEdges.at(edgeIdx).m_target == motion->parent->nodeIdx) ||
-                                (randomGraphEdges.at(edgeIdx).m_source == motion->parent->nodeIdx &&
-                                randomGraphEdges.at(edgeIdx).m_target == motion->nodeIdx)) {
-                                break;
+                            std::cout << "New edge added to random graph from " << e.m_source << " to " << e.m_target
+                                      << std::endl;
+                            std::vector<int> vals = randomGraph[e].worldValidities;
+                            std::cout << "Current world validities: ";
+                            for (int val: vals) {
+                                std::cout << val << ", ";
                             }
-                        }
-                        randomGraph[randomGraphEdges.at(edgeIdx)].worldValidities.push_back(worldIdx);
+                            std::cout << std::endl << std::endl;
 
-                        std::cout << "Random graph edge from " << randomGraphEdges.at(edgeIdx).m_source << " to " << randomGraphEdges.at(edgeIdx).m_target << " modified; " << worldIdx << " added" << std::endl;
-                        std::vector<int> vals = randomGraph[randomGraphEdges.at(edgeIdx)].worldValidities;
-                        std::cout << "Current world validities: ";
-                        for (int val : vals) {
-                            std::cout << val << ", ";
+                        } else {
+                            int edgeIdx = 0;
+                            for (; edgeIdx < static_cast<int>(randomGraphEdges.size()); edgeIdx++) {
+                                if ((randomGraphEdges.at(edgeIdx).m_source == motion->nodeIdx &&
+                                     randomGraphEdges.at(edgeIdx).m_target == motion->parent->nodeIdx) ||
+                                    (randomGraphEdges.at(edgeIdx).m_source == motion->parent->nodeIdx &&
+                                     randomGraphEdges.at(edgeIdx).m_target == motion->nodeIdx)) {
+                                    break;
+                                }
+                            }
+                            randomGraph[randomGraphEdges.at(edgeIdx)].worldValidities.push_back(worldIdx);
+
+                            std::cout << "Random graph edge from " << randomGraphEdges.at(edgeIdx).m_source << " to "
+                                      << randomGraphEdges.at(edgeIdx).m_target << " modified; " << worldIdx << " added"
+                                      << std::endl;
+                            std::vector<int> vals = randomGraph[randomGraphEdges.at(edgeIdx)].worldValidities;
+                            std::cout << "Current world validities: ";
+                            for (int val: vals) {
+                                std::cout << val << ", ";
+                            }
+                            std::cout << std::endl << std::endl;
                         }
-                        std::cout << std::endl << std::endl;
                     }
 
                     // print info
@@ -357,7 +365,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::chrono::steady_clock::time_point t_sampling_end = std::chrono::steady_clock::now();
     timeSampling = (std::chrono::duration_cast<std::chrono::milliseconds>(t_sampling_end - t_sampling_start).count()) / 1000.0;
-    saveGraph(randomGraph, "random", false);
+    saveGraph(randomGraph, "random", false, true);
 
     std::chrono::steady_clock::time_point t_belief_start = std::chrono::steady_clock::now();
 
@@ -401,8 +409,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         const auto* state3D =
                 randomGraph[node].state->as<ompl::base::RealVectorStateSpace::StateType>();
 
-        std::cout << "Added to RandomGraph: [" << state3D->values[0] << ", "
-                  << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
+//        std::cout << "Added to RandomGraph: [" << state3D->values[0] << ", "
+//                  << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
 
         int idx = 0;
         for (base::BeliefState b : beliefStates) {
@@ -415,8 +423,16 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 beliefGraph[v].beliefState = b;
                 // check if final random graph node is also final in belief
                 if (beliefGraph[v].fontcolor == "blue") {
-                    if (!fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3) {
+                    if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3)) {
                         beliefGraph[v].fontcolor = "";
+                        std::cout << "No final state: State " << v << " (" << node << ") with belief ";
+                        world->printBelief(b);
+                        std::cout << std::endl;
+                    }
+                    else {
+                        std::cout << "New final state: State " << v << " (" << node << ") with belief ";
+                        world->printBelief(b);
+                        std::cout << std::endl;
                     }
                 }
                 beliefGraph[v].color = colors[idx % static_cast<int>(colors.size())];
@@ -436,6 +452,12 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 singleBeliefGraph[idx][a].beliefState = b;
                 singleBeliefGraph[idx][a].pos = randomGraph[node].pos;
                 singleBeliefGraph[idx][a].label = std::to_string(nodesCount);
+                // check if final random graph node is also final in belief
+                if (singleBeliefGraph[idx][a].fontcolor == "blue") {
+                    if (!fabs(singleBeliefGraph[idx][a].beliefState.at(singleBeliefGraph[idx][a].finalSateIdx) - 1) < 1e-3) {
+                        singleBeliefGraph[idx][a].fontcolor = "";
+                    }
+                }
                 singleGraphMap[idx][node] = a;
 
                 nodesCount++;
@@ -489,7 +511,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 name << f << ",";
             }
             name << "]";
-            saveGraph(g, name.str(), true);
+            saveGraph(g, name.str(), true, true);
             bIdx++;
         }
     }
@@ -532,7 +554,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::chrono::steady_clock::time_point t_belief_end = std::chrono::steady_clock::now();
     timeBeliefGraph = (std::chrono::duration_cast<std::chrono::milliseconds>(t_belief_end - t_belief_start).count()) / 1000.0;
-    saveGraph(beliefGraph, "belief", true);
+    saveGraph(beliefGraph, "belief", true, true);
+    if (extendedOutput) {
+        saveGraph(beliefGraph, "belief_no_pos", true, false);
+    }
 
     std::chrono::steady_clock::time_point t_policy_start = std::chrono::steady_clock::now();
 
@@ -737,7 +762,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             std::vector<base::State*> pathR;
             VertexTraitD currNode = v;
             while (currNode != 0) {
-                std::cout << "Append to path: ";
+                std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
                 getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
                 std::cout << " with belief state ";
                 world->printBelief(pathTree[currNode].beliefState);
@@ -755,7 +780,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             }
             //path->append(pathTree[currNode].state);
             pathR.push_back(pathTree[currNode].state);
-            std::cout << "Append to path: ";
+            std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
             getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
             std::cout << " with belief state ";
             world->printBelief(pathTree[currNode].beliefState);
@@ -859,7 +884,9 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                         EdgeTraitD e = p.first;
                         pathTree[e].color = "red";
                         visited.insert(currVertex);
-                        constructPathTree(beliefGraph, costs, w, it.dereference(), visited);
+                        if (pathTree[w].fontcolor != "blue") {
+                            constructPathTree(beliefGraph, costs, w, it.dereference(), visited);
+                        }
                     }
                 }
             }
@@ -895,7 +922,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
 }
 
 // save graph as png
-void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels) {
+void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels, bool usePos) {
     std::ofstream colored_dot_file(name + std::string(".dot"));
     boost::dynamic_properties dp_no_pos;
     dp_no_pos.property("node_id",   get(boost::vertex_index, g));
@@ -905,7 +932,7 @@ void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabe
     if (useLabels) {
         dp_no_pos.property("label", get(&VertexStruct::label, g));
     }
-    if (true) {
+    if (usePos) {
         dp_no_pos.property("pos", get(&VertexStruct::pos, g));
     }
     boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
