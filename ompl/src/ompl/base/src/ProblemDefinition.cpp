@@ -41,6 +41,7 @@
 #include "ompl/control/SpaceInformation.h"
 #include "ompl/control/PathControl.h"
 #include "ompl/tools/config/MagicConstants.h"
+#include "ompl/base/spaces/RealVectorStateSpace.h"
 #include <sstream>
 #include <algorithm>
 #include <mutex>
@@ -516,4 +517,14 @@ void ompl::base::ProblemDefinition::setSolutionNonExistenceProof(
     const ompl::base::SolutionNonExistenceProofPtr &nonExistenceProof)
 {
     nonExistenceProof_ = nonExistenceProof;
+}
+
+void ompl::base::ProblemDefinition::addGoalState(std::vector<double> goalState) {
+    base::ScopedState<base::RealVectorBeliefStateSpace> goal(si_->getStateSpace());
+    int i = 0;
+    for (double d : goalState) {
+        goal->as<base::RealVectorBeliefStateSpace::StateType>()->values[i] = d;
+        i++;
+    }
+    goalStates.push_back(&goal);
 }

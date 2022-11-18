@@ -46,6 +46,7 @@
 #include "ompl/util/Console.h"
 #include "ompl/util/ClassForward.h"
 #include "ompl/base/ScopedState.h"
+#include "ompl/base/spaces/RealVectorStateSpace.h"
 
 #include <vector>
 #include <cstdlib>
@@ -406,6 +407,12 @@ namespace ompl
             /** \brief Print information about the start and goal states and the optimization objective */
             void print(std::ostream &out = std::cout) const;
 
+            void addGoalState(std::vector<double> goalState);
+
+            std::vector<ScopedState<RealVectorBeliefStateSpace> *> getGoalStates() {
+                return goalStates;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -435,6 +442,8 @@ namespace ompl
 
             /** \brief The set of solutions computed for this goal (maintains an array of PlannerSolution) */
             PlannerSolutionSetPtr solutions_;
+
+            std::vector<ScopedState<RealVectorBeliefStateSpace> *> goalStates;
         };
     }
 }

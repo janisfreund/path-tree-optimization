@@ -177,6 +177,12 @@ public:
         // set the start and goal states
         pdef->setStartAndGoalStates(start, goal);
 
+        // set multiple goal states
+        pdef->addGoalState(std::vector<double>{2.844, 1.124, 1.455, 0.595, 1.422});
+        pdef->addGoalState(std::vector<double>{-3.042, 1.124, 1.455, 0.595, 1.422});
+        pdef->addGoalState(std::vector<double>{-3.042, -3.142, -1.587, 0.595, 1.422});
+        pdef->addGoalState(std::vector<double>{3.009, -3.142, -1.587, 0.595, 1.422});
+
         // create a planner for the defined space
         auto planner(std::make_shared<og::Partial>(si));
 //    auto planner(std::make_shared<og::RRTConnect>(si));
