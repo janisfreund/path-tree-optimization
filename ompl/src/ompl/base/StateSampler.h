@@ -102,6 +102,8 @@ namespace ompl
             */
             virtual void sampleGaussian(State *state, const State *mean, double stdDev) = 0;
 
+//            virtual void sampleGoodCameraPosition(State *state, std::vector<double> objPos, std::vector<int> fixedIdx) = 0;
+
         protected:
             /** \brief The state space this sampler samples */
             const StateSpace *space_;
@@ -139,6 +141,8 @@ namespace ompl
             /** \brief Call sampleGaussian for each of the subspace states
                 with stdDev scaled by the corresponding subspace weight. */
             void sampleGaussian(State *state, const State *mean, double stdDev) override;
+
+//            void sampleGoodCameraPosition(ompl::base::State *state, std::vector<double> objPos, std::vector<int> fixedIdx) override;
 
         protected:
             /** \brief The samplers that are composed */

@@ -93,6 +93,10 @@ void ompl::geometric::SimpleSetup::setStartAndGoalStates(const base::ScopedState
     psk_ = std::make_shared<PathSimplifier>(si_, pdef_->getGoal());
 }
 
+void ompl::geometric::SimpleSetup::addGoalState(std::vector<double> goalState) {
+    pdef_->addGoalState(goalState);
+}
+
 void ompl::geometric::SimpleSetup::setGoalState(const base::ScopedState<> &goal, const double threshold)
 {
     pdef_->setGoalState(goal, threshold);

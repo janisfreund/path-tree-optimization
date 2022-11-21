@@ -409,7 +409,7 @@ namespace ompl
 
             void addGoalState(std::vector<double> goalState);
 
-            std::vector<ScopedState<RealVectorBeliefStateSpace> *> getGoalStates() {
+            std::vector<State *> getGoalStates() {
                 return goalStates;
             }
 
@@ -443,7 +443,7 @@ namespace ompl
             /** \brief The set of solutions computed for this goal (maintains an array of PlannerSolution) */
             PlannerSolutionSetPtr solutions_;
 
-            std::vector<ScopedState<RealVectorBeliefStateSpace> *> goalStates;
+            std::vector<State *> goalStates;
         };
     }
 }

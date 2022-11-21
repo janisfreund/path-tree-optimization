@@ -4,7 +4,6 @@
 
 #include "ompl/geometric/planners/partial/Partial.h"
 #include "ompl/base/goals/GoalSampleableRegion.h"
-#include "ompl/base/spaces/RealVectorStateSpace.h"
 
 ompl::geometric::Partial::Partial(const base::SpaceInformationPtr &si) : base::Planner(si, "partial")
 {
@@ -25,7 +24,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     bool changeableFinalStates = true;
 
     // define final states for each world TODO
-    std::vector<base::ScopedState<base::RealVectorBeliefStateSpace> *> goalStates = pdef_->getGoalStates();
+    std::vector<base::State *> goalStates = pdef_->getGoalStates();
 
 //    base::ScopedState<base::RealVectorBeliefStateSpace> goal1(si_->getStateSpace());
 //    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 2.844;
@@ -151,8 +150,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // get input states with PlannerInputStates helper, pis_
     while (const base::State *st = pis_.nextStart()) {
         // compute distancesDirect from start state to all possible goal states
-        for (base::ScopedState<base::RealVectorBeliefStateSpace> *gState : goalStates) {
-            distancesDirect.push_back(gState->distance(st));
+        for (base::State *gState : goalStates) {
+            distancesDirect.push_back(si_->getStateSpace()->distance(gState, st));
         }
         // fill nn structure with starting state for all possible worlds
         for (int i = 0; i < numWorldStates; i++) {
@@ -208,7 +207,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         world->setState(sampledWorldIdx);
 
         // set goal to goal state of the sampled world
-        pdef_->setGoalState(*goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
+        pdef_->setGoalState(goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
 
         // get a handle to the Goal from the ompl::base::ProblemDefinition member, pdef_
         base::Goal *goal = pdef_->getGoal().get();

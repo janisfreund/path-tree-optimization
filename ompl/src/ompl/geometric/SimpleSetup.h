@@ -190,6 +190,8 @@ namespace ompl
             void setStartAndGoalStates(const base::ScopedState<> &start, const base::ScopedState<> &goal,
                                        double threshold = std::numeric_limits<double>::epsilon());
 
+            void addGoalState(std::vector<double> goalState);
+
             /** \brief Add a starting state for planning. This call is not
                 needed if setStartAndGoalStates() has been called. */
             void addStartState(const base::ScopedState<> &state)

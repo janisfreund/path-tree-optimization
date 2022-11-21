@@ -62,6 +62,12 @@ void ompl::base::CompoundStateSampler::sampleUniformNear(State *state, const Sta
             samplers_[i]->sampleUniform(comps[i]);
 }
 
+//void ompl::base::CompoundStateSampler::sampleGoodCameraPosition(ompl::base::State *state, std::vector<double> objPos, std::vector<int> fixedIdx) {
+//    State **comps = state->as<CompoundState>()->components;
+//    for (unsigned int i = 0; i < samplerCount_; ++i)
+//        samplers_[i]->sampleUniform(comps[i]);
+//}
+
 void ompl::base::CompoundStateSampler::sampleGaussian(State *state, const State *mean, const double stdDev)
 {
     State **comps = state->as<CompoundState>()->components;
