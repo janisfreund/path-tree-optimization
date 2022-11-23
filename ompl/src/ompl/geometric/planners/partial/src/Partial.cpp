@@ -4,6 +4,7 @@
 
 #include "ompl/geometric/planners/partial/Partial.h"
 #include "ompl/base/goals/GoalSampleableRegion.h"
+#include "ompl/base/spaces/RealVectorStateSpace.h"
 
 ompl::geometric::Partial::Partial(const base::SpaceInformationPtr &si) : base::Planner(si, "partial")
 {
@@ -25,90 +26,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     // define final states for each world TODO
     std::vector<base::State *> goalStates = pdef_->getGoalStates();
-
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal1(si_->getStateSpace());
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 2.844;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
-//    goalStates.push_back(&goal1);
-//
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal2(si_->getStateSpace());
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.042;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
-//    goalStates.push_back(&goal2);
-//
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal3(si_->getStateSpace());
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.045;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
-//    goalStates.push_back(&goal3);
-//
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal4(si_->getStateSpace());
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 3.009;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 0.595;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[5] = 0.;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[6] = 0.;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[7] = 0.;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[8] = 1.422;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[9] = 0.;
-//    goalStates.push_back(&goal4);
-
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal1(si_->getStateSpace());
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 2.844;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
-//    goal1->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
-//    goalStates.push_back(&goal1);
-//
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal2(si_->getStateSpace());
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.042;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = 1.124;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = 1.455;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
-//    goal2->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
-//    goalStates.push_back(&goal2);
-//
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal3(si_->getStateSpace());
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = -3.045;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
-//    goal3->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
-//    goalStates.push_back(&goal3);
-//
-//    base::ScopedState<base::RealVectorBeliefStateSpace> goal4(si_->getStateSpace());
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[0] = 3.009;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[1] = -3.142;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[2] = -1.587;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[3] = 0.595;
-//    goal4->as<base::RealVectorBeliefStateSpace::StateType>()->values[4] = 1.422;
-//    goalStates.push_back(&goal4);
 
     std::vector<double> distancesDirect;
     std::vector<double> distancesPlanned(static_cast<int>(goalStates.size()));
@@ -954,42 +871,42 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
 
 // save graph as png
 void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 

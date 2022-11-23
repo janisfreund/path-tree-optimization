@@ -41,6 +41,8 @@
 #include "ompl/control/SpaceInformation.h"
 #include "ompl/control/PathControl.h"
 #include "ompl/tools/config/MagicConstants.h"
+#include "ompl/base/StateSpace.h"
+#include "ompl/base/spaces/RealVectorStateSpace.h"
 #include <sstream>
 #include <algorithm>
 #include <mutex>

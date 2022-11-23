@@ -46,7 +46,6 @@
 #include "ompl/util/Console.h"
 #include "ompl/util/ClassForward.h"
 #include "ompl/base/ScopedState.h"
-#include "ompl/base/spaces/RealVectorStateSpace.h"
 
 #include <vector>
 #include <cstdlib>
