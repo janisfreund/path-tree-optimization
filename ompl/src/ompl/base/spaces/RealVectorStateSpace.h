@@ -169,6 +169,8 @@ namespace ompl
 
             StateSamplerPtr allocDefaultStateSampler() const override;
 
+            StateSamplerPtr allocCameraStateSampler() const;
+
             State *allocState() const override;
 
             void freeState(State *state) const override;
@@ -212,6 +214,19 @@ namespace ompl
             }
         private:
             std::vector<float> beliefs_;
+        };
+
+        class CameraStateSampler : public RealVectorStateSampler
+        {
+        public:
+            /** \brief Constructor */
+            CameraStateSampler(const StateSpace *space) : RealVectorStateSampler(space)
+            {
+            }
+
+            void sampleGoodCameraPosition(State *state) override {
+                RealVectorStateSampler::sampleUniform(state);
+            }
         };
     }
 }

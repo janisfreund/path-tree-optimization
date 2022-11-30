@@ -133,10 +133,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
         // Sample a new state uniformly or sample the goal
         std::cout << "New state sampled.\n";
-        if ((goal_s != nullptr) && rng_.uniform01() < goalBias_ && goal_s->canSample())
+        if ((goal_s != nullptr) && rng_.uniform01() < goalBias_ && goal_s->canSample()) {
             goal_s->sampleGoal(rstate);
-        else
-            sampler_->sampleUniform(rstate);
+        }
+        else {
+//            sampler_->sampleUniform(rstate);
+            sampler_->sampleGoodCameraPosition(rstate);
+        }
 
         // Check if sampled state is valid in sampled world
         if (!si_->isValid(rstate, *world)) {

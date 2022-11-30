@@ -103,6 +103,12 @@ public:
         return std::vector<int>{};
     }
 
+    static ob::StateSamplerPtr allocCameraStateSampler(const ob::StateSpace *space)
+    {
+        return std::make_shared<ob::CameraStateSampler>(space);
+    }
+
+
     void plan() {
         // construct the state space we are planning in
         auto space(std::make_shared<ob::RealVectorBeliefStateSpace>());
@@ -124,6 +130,8 @@ public:
         bounds.setHigh(M_PI);
 
         space->setBounds(bounds);
+
+        space->setStateSamplerAllocator(allocCameraStateSampler);
 
         // construct an instance of  space information from this state space
         auto si(std::make_shared<ob::SpaceInformation>(space));

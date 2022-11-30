@@ -269,6 +269,11 @@ ompl::base::StateSamplerPtr ompl::base::RealVectorStateSpace::allocDefaultStateS
     return std::make_shared<RealVectorStateSampler>(this);
 }
 
+ompl::base::StateSamplerPtr ompl::base::RealVectorStateSpace::allocCameraStateSampler() const
+{
+    return std::make_shared<CameraStateSampler>(this);
+}
+
 ompl::base::State *ompl::base::RealVectorStateSpace::allocState() const
 {
     auto *rstate = new StateType();

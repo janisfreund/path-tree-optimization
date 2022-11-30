@@ -102,7 +102,9 @@ namespace ompl
             */
             virtual void sampleGaussian(State *state, const State *mean, double stdDev) = 0;
 
-//            virtual void sampleGoodCameraPosition(State *state, std::vector<double> objPos, std::vector<int> fixedIdx) = 0;
+            virtual void sampleGoodCameraPosition(State *state){
+                sampleUniform(state);
+            };
 
         protected:
             /** \brief The state space this sampler samples */
