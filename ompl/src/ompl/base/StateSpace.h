@@ -314,6 +314,10 @@ namespace ompl
                */
             virtual double distance(const State *state1, const State *state2) const = 0;
 
+            virtual double distanceBase(const State *state1, const State *state2, int entries) const {
+                return distance(state1, state2);
+            }
+
             /** \brief Get the number of chars in the serialization of a state in this space */
             virtual unsigned int getSerializationLength() const;
 

@@ -154,6 +154,11 @@ namespace ompl
                 return stateSpace_->distance(state1, state2);
             }
 
+            double distanceBase(const State *state1, const State *state2, int entries) const
+            {
+                return stateSpace_->distanceBase(state1, state2, entries);
+            }
+
             /** \brief Bring the state within the bounds of the state space */
             void enforceBounds(State *state) const
             {

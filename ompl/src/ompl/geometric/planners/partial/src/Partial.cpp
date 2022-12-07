@@ -68,7 +68,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     while (const base::State *st = pis_.nextStart()) {
         // compute distancesDirect from start state to all possible goal states
         for (base::State *gState : goalStates) {
-            distancesDirect.push_back(si_->getStateSpace()->distance(gState, st));
+            distancesDirect.push_back(si_->getStateSpace()->distanceBase(gState, st, 2));
         }
         // fill nn structure with starting state for all possible worlds
         for (int i = 0; i < numWorldStates; i++) {
@@ -120,7 +120,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::chrono::steady_clock::time_point t_sampling_start = std::chrono::steady_clock::now();
     while (!ptc()) {
         // Sample world
-        int sampledWorldIdx = rand() % world->getNumWorldStates();
+        int sampledWorldIdx;
+        if (randomGraphIdx <= world->getNumWorldStates()) {
+            sampledWorldIdx = randomGraphIdx - 1;
+        }
+        else {
+            sampledWorldIdx = rand() % world->getNumWorldStates();
+        }
         world->setState(sampledWorldIdx);
 
         // set goal to goal state of the sampled world
@@ -133,17 +139,25 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
         // Sample a new state uniformly or sample the goal
         std::cout << "New state sampled.\n";
-        if ((goal_s != nullptr) && rng_.uniform01() < goalBias_ && goal_s->canSample()) {
+        double rValue = rng_.uniform01();
+        if (randomGraphIdx <= world->getNumWorldStates()) {
+            sampler_->sampleGoodCameraPositionNear(rstate, 0., 0.);
+        }
+        else if ((goal_s != nullptr) && rValue < goalBias_ && goal_s->canSample()) {
             goal_s->sampleGoal(rstate);
+            std::cout << "Goal state sampled.\n";
+        }
+        else if (rValue < (goalBias_ + 0.2)) {
+            sampler_->sampleUniform(rstate);
         }
         else {
-//            sampler_->sampleUniform(rstate);
             sampler_->sampleGoodCameraPosition(rstate);
         }
 
         // Check if sampled state is valid in sampled world
         if (!si_->isValid(rstate, *world)) {
             continue;
+            std::cout << "Sampled state is not valid in sampled world!" << std::endl;
         }
 
         base::State *dstate = rstate;
@@ -179,10 +193,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
             // find the states in the tree within radius
             std::vector<Motion*> nmotionVec;
-            nn_.at(worldIdx)->nearestR(rmotion, 3.0, nmotionVec);
+            nn_.at(worldIdx)->nearestR(rmotion, 2.0, nmotionVec);
 
             // buggy -> use only nearest
-//            nn_.at(worldIdx)->nearestK(rmotion, 20, nmotionVec);
+//            nn_.at(worldIdx)->nearestK(rmotion, 3, nmotionVec);
 
 //            nmotionVec.push_back(nn_.at(worldIdx)->nearest(rmotion));
 
@@ -553,7 +567,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     newCost = std::numeric_limits<double>::infinity();
                 }
                 else {
-                    double distance = si_->getStateSpace()->distance(beliefGraph[v].state, beliefGraph[parent].state);
+                    double distance = si_->getStateSpace()->distanceBase(beliefGraph[v].state, beliefGraph[parent].state, 2);
                     newCost = distance + costs[v];
                 }
             }
@@ -725,7 +739,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 for (; it != end; it++) {
                     // TODO check if only 1 parent
                     VertexTraitD nextNode = it->m_source;
-                    dis += si_->getStateSpace()->distance(pathTree[currNode].state, pathTree[nextNode].state);
+                    dis += si_->getStateSpace()->distanceBase(pathTree[currNode].state, pathTree[nextNode].state, 2);
                     currNode = nextNode;
                 }
             }
@@ -775,6 +789,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::cout << std::endl << std::endl;
     std::cout << "Number of sampled states: " << static_cast<int>(randomGraphVertices.size()) << std::endl;
+    std::cout << "Number of beliefs: " << static_cast<int>(beliefStates.size()) << std::endl;
     std::cout << "Total time: " << timeTotal << "s" << std::endl;
     std::cout << "Sampling time: " << timeSampling << "s" << std::endl;
     std::cout << "Check motion time: " << timeCheckMotion << "s" << std::endl;
@@ -816,35 +831,38 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         bool isConn = !beliefGraph[currVertex].beliefChildren.empty();
         for (; it != end; it++) {
             VertexTrait der = it.dereference();
-            if (beliefGraph[boost::edge(it.dereference(), currVertex, beliefGraph).first].isWorldConnection) {
-                if (isConn) {
-                    if (visited.find(it.dereference()) == visited.end()) {
-                        VertexTraitD w = add_vertex(pathTree);
-                        pathTree[w].state = beliefGraph[it.dereference()].state;
-                        pathTree[w].fontcolor = beliefGraph[it.dereference()].fontcolor;
-                        pathTree[w].finalSateIdx = beliefGraph[it.dereference()].finalSateIdx;
-                        pathTree[w].color = beliefGraph[it.dereference()].color;
-                        pathTree[w].beliefState = beliefGraph[it.dereference()].beliefState;
-                        pathTree[w].label = beliefGraph[it.dereference()].label;
-                        if (pathTree[w].fontcolor == "blue") {
-                            pathTreeFinalStates.push_back(w);
-                        }
+            if (visited.find(it.dereference()) == visited.end()) {
+                if (beliefGraph[boost::edge(it.dereference(), currVertex, beliefGraph).first].isWorldConnection) {
+                    if (isConn) {
+//                        if (visited.find(it.dereference()) == visited.end()) {
+                            VertexTraitD w = add_vertex(pathTree);
+                            pathTree[w].state = beliefGraph[it.dereference()].state;
+                            pathTree[w].fontcolor = beliefGraph[it.dereference()].fontcolor;
+                            pathTree[w].finalSateIdx = beliefGraph[it.dereference()].finalSateIdx;
+                            pathTree[w].color = beliefGraph[it.dereference()].color;
+                            pathTree[w].beliefState = beliefGraph[it.dereference()].beliefState;
+                            pathTree[w].label = beliefGraph[it.dereference()].label;
+                            if (pathTree[w].fontcolor == "blue") {
+                                pathTreeFinalStates.push_back(w);
+                            }
 //                        std::cout << "State " << pathTree[w].label << std::endl;
-                        pathTree[w].pos = beliefGraph[it.dereference()].pos;
-                        std::pair<EdgeTraitD, bool> p = add_edge(v, w, pathTree);
-                        EdgeTraitD e = p.first;
-                        pathTree[e].color = "red";
-                        visited.insert(currVertex);
-                        if (pathTree[w].fontcolor != "blue") {
-                            constructPathTree(beliefGraph, costs, w, it.dereference(), visited);
-                        }
+                            pathTree[w].pos = beliefGraph[it.dereference()].pos;
+                            std::pair<EdgeTraitD, bool> p = add_edge(v, w, pathTree);
+                            EdgeTraitD e = p.first;
+                            pathTree[e].color = "red";
+                            visited.insert(currVertex);
+                            if (pathTree[w].fontcolor != "blue") {
+                                constructPathTree(beliefGraph, costs, w, it.dereference(), visited);
+                            }
+//                        }
                     }
+                } else if (bestVertex == 0 || costs[it.dereference()] < costs[bestVertex]) {
+                    bestVertex = it.dereference();
                 }
             }
-            else if (bestVertex == 0 || costs[it.dereference()] < costs[bestVertex]) {
-                bestVertex = it.dereference();
-            }
         }
+
+        saveGraph(pathTree, "path_inter", true, false);
 
         if (isConn || bestVertex == 0 || costs[bestVertex] == std::numeric_limits<double>::infinity()) {
             break;
@@ -865,6 +883,9 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         std::pair<EdgeTraitD , bool> p = add_edge(v, u, pathTree);
         v = u;
         currVertex = bestVertex;
+        visited.insert(currVertex);
+
+        saveGraph(pathTree, "path_inter", true, false);
 
         if (beliefGraph[bestVertex].fontcolor == "blue") {
             break;
@@ -874,42 +895,42 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
 
 // save graph as png
 void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels, bool usePos) {
-//    std::ofstream colored_dot_file(name + std::string(".dot"));
-//    boost::dynamic_properties dp_no_pos;
-//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-//    dp_no_pos.property("color", get(&VertexStruct::color, g));
-//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-//    if (useLabels) {
-//        dp_no_pos.property("label", get(&VertexStruct::label, g));
-//    }
-//    if (usePos) {
-//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-//    }
-//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-//    std::stringstream command;
-//    command << "neato -T png " << name << ".dot -o " << name << ".png";
-//    system(command.str().c_str());
+    std::ofstream colored_dot_file(name + std::string(".dot"));
+    boost::dynamic_properties dp_no_pos;
+    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+    dp_no_pos.property("color", get(&VertexStruct::color, g));
+    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+    if (useLabels) {
+        dp_no_pos.property("label", get(&VertexStruct::label, g));
+    }
+    if (usePos) {
+        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+    }
+    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+    std::stringstream command;
+    command << "neato -T png " << name << ".dot -o " << name << ".png";
+    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLabels, bool usePos) {
-//    std::ofstream colored_dot_file(name + std::string(".dot"));
-//    boost::dynamic_properties dp_no_pos;
-//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-//    dp_no_pos.property("color", get(&VertexStruct::color, g));
-//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-//    if (useLabels) {
-//        dp_no_pos.property("label", get(&VertexStruct::label, g));
-//    }
-//    if (usePos) {
-//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-//    }
-//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-//    std::stringstream command;
-//    command << "neato -T png " << name << ".dot -o " << name << ".png";
-//    system(command.str().c_str());
+    std::ofstream colored_dot_file(name + std::string(".dot"));
+    boost::dynamic_properties dp_no_pos;
+    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+    dp_no_pos.property("color", get(&VertexStruct::color, g));
+    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+    if (useLabels) {
+        dp_no_pos.property("label", get(&VertexStruct::label, g));
+    }
+    if (usePos) {
+        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+    }
+    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+    std::stringstream command;
+    command << "neato -T png " << name << ".dot -o " << name << ".png";
+    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 

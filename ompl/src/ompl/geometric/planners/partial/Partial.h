@@ -16,7 +16,7 @@
 #include <boost/config.hpp>
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
-//#include <boost/graph/graphviz.hpp>
+#include <boost/graph/graphviz.hpp>
 #include <chrono>
 
 namespace ompl
@@ -94,7 +94,10 @@ namespace ompl
             /** \brief Compute distance between motions (actually distance between contained states) */
             double distanceFunction(const Motion *a, const Motion *b) const
             {
-                return si_->distance(a->state, b->state);
+//                return si_->distance(a->state, b->state);
+
+                // return distance of base poses
+                return si_->distanceBase(a->state, b->state, 2);
             }
 
             struct VertexStruct

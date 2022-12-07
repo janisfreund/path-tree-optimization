@@ -163,6 +163,8 @@ namespace ompl
 
             double distance(const State *state1, const State *state2) const override;
 
+            double distanceBase(const State *state1, const State *state2, int entries) const override;
+
             bool equalStates(const State *state1, const State *state2) const override;
 
             void interpolate(const State *from, const State *to, double t, State *state) const override;
@@ -225,6 +227,10 @@ namespace ompl
             }
 
             void sampleGoodCameraPosition(State *state) override {
+                RealVectorStateSampler::sampleUniform(state);
+            }
+
+            void sampleGoodCameraPositionNear(State *state, double x, double y) override {
                 RealVectorStateSampler::sampleUniform(state);
             }
         };
