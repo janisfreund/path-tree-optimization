@@ -190,6 +190,29 @@ void ompl::geometric::SimpleSetup::simplifySolution(double duration)
     OMPL_WARN("No solution to simplify");
 }
 
+void ompl::geometric::SimpleSetup::simplifyAllSolutions(double duration)
+{
+    if (pdef_)
+    {
+        int solCount = pdef_->getSolutionCount();
+        for (int i = 0; i < solCount; i++) {
+            const base::PathPtr &p = pdef_->getIdxSolutionPath(i);
+            if (p) {
+                time::point start = time::now();
+                auto &path = static_cast<PathGeometric &>(*p);
+                std::size_t numStates = path.getStateCount();
+                if (duration < std::numeric_limits<double>::epsilon())
+                    psk_->simplifyMax(static_cast<PathGeometric &>(*p));
+                else
+                    psk_->simplify(static_cast<PathGeometric &>(*p), duration);
+                simplifyTime_ = time::seconds(time::now() - start);
+                OMPL_INFORM("SimpleSetup: Path simplification took %f seconds and changed from %d to %d states",
+                            simplifyTime_, numStates, path.getStateCount());
+            }
+        }
+    }
+}
+
 const std::string ompl::geometric::SimpleSetup::getSolutionPlannerName() const
 {
     if (pdef_)

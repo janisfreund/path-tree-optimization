@@ -108,6 +108,10 @@ namespace ompl
             /** \brief Return the length of a path */
             virtual double length() const = 0;
 
+            virtual double lengthBase(int entries) const {
+                return length();
+            }
+
             /** \brief Return the cost of the path with respect to a
                 specified optimization objective. */
             virtual Cost cost(const OptimizationObjectivePtr &obj) const = 0;

@@ -5,6 +5,7 @@
 #include "ompl/geometric/planners/partial/Partial.h"
 #include "ompl/base/goals/GoalSampleableRegion.h"
 #include "ompl/base/spaces/RealVectorStateSpace.h"
+#include "ompl/geometric/PathSimplifier.h"
 
 ompl::geometric::Partial::Partial(const base::SpaceInformationPtr &si) : base::Planner(si, "partial")
 {
@@ -759,6 +760,14 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //            world->printBelief(pathTree[v].beliefState);
 //            std::cout << " with goal state " << v << ":" << std::endl;
 //            path->print(std::cout);
+
+            // simplify path
+            int worldIdx = pathTree[v].finalSateIdx;
+            std::cout << "Simplify path " << worldIdx << std::endl;
+            pdef_->setGoalState(goalStates[worldIdx], std::numeric_limits<double>::epsilon());
+            ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_, pdef_->getGoal(), pdef_->getOptimizationObjective());
+            psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*path), 20);
+
             pdef_->addSolutionPath(path);
         }
     }
@@ -811,8 +820,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::cout << std::endl << std::endl;
 
     // clear memory
-    if (rmotion->state != nullptr)
-        si_->freeState(rmotion->state);
+//    if (rmotion->state != nullptr)
+//        si_->freeState(rmotion->state);
     delete rmotion;
 
     if (!worldsUnsolved.empty()) {
@@ -862,7 +871,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
             }
         }
 
-        saveGraph(pathTree, "path_inter", true, false);
+//        saveGraph(pathTree, "path_inter", true, false);
 
         if (isConn || bestVertex == 0 || costs[bestVertex] == std::numeric_limits<double>::infinity()) {
             break;
@@ -885,7 +894,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         currVertex = bestVertex;
         visited.insert(currVertex);
 
-        saveGraph(pathTree, "path_inter", true, false);
+//        saveGraph(pathTree, "path_inter", true, false);
 
         if (beliefGraph[bestVertex].fontcolor == "blue") {
             break;

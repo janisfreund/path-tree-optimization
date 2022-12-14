@@ -212,6 +212,11 @@ public:
         ob::PlannerStatus solved = planner->ob::Planner::solve(SOLVE_TIME);
 
         if (solved) {
+            // simplify path
+            ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si, pdef->getGoal(), pdef->getOptimizationObjective());
+            const ompl::base::PathPtr &p = pdef->getSolutionPath();
+            psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*p), 20);
+
             // get the goal representation from the problem definition (not the same as the goal state)
             // and inquire about the found path
             ob::PathPtr path = pdef->getSolutionPath();

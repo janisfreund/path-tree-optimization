@@ -97,6 +97,8 @@ namespace ompl
             /** \brief Compute the length of a geometric path (sum of lengths of segments that make up the path) */
             double length() const override;
 
+            double lengthBase(int entries) const override;
+
             /** \brief Check if the path is valid */
             bool check() const override;
 
@@ -158,6 +160,8 @@ namespace ompl
                 for validity when a discrete motion validator is
                 used. */
             void interpolate();
+
+            void interpolateBase(unsigned int count, int entries);
 
             /** \brief Add a state at the middle of each segment */
             void subdivide();

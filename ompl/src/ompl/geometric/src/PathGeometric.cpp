@@ -108,6 +108,14 @@ double ompl::geometric::PathGeometric::length() const
     return L;
 }
 
+double ompl::geometric::PathGeometric::lengthBase(int entries) const
+{
+    double L = 0.0;
+    for (unsigned int i = 1; i < states_.size(); ++i)
+        L += si_->distanceBase(states_[i - 1], states_[i], entries);
+    return L;
+}
+
 double ompl::geometric::PathGeometric::clearance() const
 {
     double c = 0.0;
@@ -356,6 +364,68 @@ void ompl::geometric::PathGeometric::interpolate(unsigned int requestCount)
             double segmentLength = si_->distance(s1, s2);
             int ns =
                 i + 1 == n1 ? maxNStates + 2 : (int)floor(0.5 + (double)count * segmentLength / remainingLength) + 1;
+
+            // if more than endpoints are needed
+            if (ns > 2)
+            {
+                ns -= 2;  // subtract endpoints
+
+                // make sure we don't add too many states
+                if (ns > maxNStates)
+                    ns = maxNStates;
+
+                // compute intermediate states
+                std::vector<base::State *> block;
+                si_->getMotionStates(s1, s2, block, ns, false, true);
+                newStates.insert(newStates.end(), block.begin(), block.end());
+            }
+            else
+                ns = 0;
+
+            // update what remains to be done
+            count -= (ns + 1);
+            remainingLength -= segmentLength;
+        }
+        else
+            count--;
+    }
+
+    // add the last state
+    newStates.push_back(states_[n1]);
+    states_.swap(newStates);
+}
+
+void ompl::geometric::PathGeometric::interpolateBase(unsigned int requestCount, int entries)
+{
+    if (requestCount < states_.size() || states_.size() < 2)
+        return;
+
+    unsigned int count = requestCount;
+
+    // the remaining length of the path we need to add states along
+    double remainingLength = lengthBase(entries);
+
+    // the new array of states this path will have
+    std::vector<base::State *> newStates;
+    const int n1 = states_.size() - 1;
+
+    for (int i = 0; i < n1; ++i)
+    {
+        base::State *s1 = states_[i];
+        base::State *s2 = states_[i + 1];
+
+        newStates.push_back(s1);
+
+        // the maximum number of states that can be added on the current motion (without its endpoints)
+        // such that we can at least fit the remaining states
+        int maxNStates = count + i - states_.size();
+
+        if (maxNStates > 0)
+        {
+            // compute an approximate number of states the following segment needs to contain; this includes endpoints
+            double segmentLength = si_->distanceBase(s1, s2, entries);
+            int ns =
+                    i + 1 == n1 ? maxNStates + 2 : (int)floor(0.5 + (double)count * segmentLength / remainingLength) + 1;
 
             // if more than endpoints are needed
             if (ns > 2)
