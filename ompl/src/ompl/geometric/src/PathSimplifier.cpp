@@ -677,8 +677,8 @@ bool ompl::geometric::PathSimplifier::simplify(PathGeometric &path, double maxTi
 bool ompl::geometric::PathSimplifier::simplify(PathGeometric &path, const base::PlannerTerminationCondition &ptc,
                                                bool atLeastOnce)
 {
-    if (path.getStateCount() < 3)
-        return true;
+//    if (path.getStateCount() < 3)
+//        return true;
 
     bool tryMore = true, valid = true;
     while ((ptc == false || atLeastOnce) && tryMore)

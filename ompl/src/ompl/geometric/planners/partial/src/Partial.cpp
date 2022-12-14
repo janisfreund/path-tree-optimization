@@ -718,6 +718,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         // return solution path
         for (VertexTraitD v : pathTreeFinalStates) {
             double dis = 0;
+            std::vector<int> observationIdx;
             int planIdx = pathTree[v].finalSateIdx;
             const auto *state3D =
                     pathTree[v].state->as<ompl::base::RealVectorStateSpace::StateType>();
@@ -727,6 +728,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             auto path(std::make_shared<PathGeometric>(si_));
             std::vector<base::State*> pathR;
             VertexTraitD currNode = v;
+            int c = 0;
             while (currNode != 0) {
                 std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
                 getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
@@ -735,11 +737,16 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 std::cout << std::endl;
                 //path->append(pathTree[currNode].state);
                 pathR.push_back(pathTree[currNode].state);
+                c++;
                 GraphD::in_edge_iterator it, end;
                 std::tie(it, end) = boost::in_edges(currNode, pathTree);
                 for (; it != end; it++) {
                     // TODO check if only 1 parent
                     VertexTraitD nextNode = it->m_source;
+                    EdgeTraitD e = it.dereference();
+                    if (pathTree[e].color == "red") {
+                        observationIdx.push_back(c);
+                    }
                     dis += si_->getStateSpace()->distanceBase(pathTree[currNode].state, pathTree[nextNode].state, 2);
                     currNode = nextNode;
                 }
@@ -753,20 +760,59 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             std::cout << std::endl;
 
             distancesPlanned.at(planIdx) = dis;
-            for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
-                path->append(pathR[i]);
+            int numSegments = static_cast<int>(observationIdx.size()) + 1;
+
+            std::vector<std::shared_ptr<PathGeometric>> segments;
+            if (numSegments > 1) {
+                int i = static_cast<int>(pathR.size()) - 1;
+                int c = 0;
+                for (int segIdx = 0; segIdx < numSegments; segIdx++) {
+                    auto sPath(std::make_shared<PathGeometric>(si_));
+                    for (; i >= 0; ) {
+                        sPath->append(pathR[i]);
+                        if (observationIdx[segIdx] == c) {
+                            sPath->interpolate(20);
+
+                            // simplify
+                            int worldIdx = pathTree[v].finalSateIdx;
+                            pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
+                            world->setState(worldIdx);
+                            ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_, pdef_->getGoal(), pdef_->getOptimizationObjective());
+                            psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
+
+                            segments.push_back(sPath);
+                            break;
+                        }
+                        else if (i == 0) {
+                            segments.push_back(sPath);
+                        }
+                        c++;
+                        i--;
+                    }
+                }
+
+                for (std::shared_ptr<PathGeometric> pathSeg : segments) {
+                    path->append(*pathSeg);
+                }
+            } else {
+                for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
+                    path->append(pathR[i]);
+                }
+
+                // simplify path
+                int worldIdx = pathTree[v].finalSateIdx;
+                pdef_->setGoalState(goalStates[worldIdx], std::numeric_limits<double>::epsilon());
+                world->setState(worldIdx);
+                ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_, pdef_->getGoal(), pdef_->getOptimizationObjective());
+                psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*path), 20);
+
+                segments.push_back(path);
             }
+
 //            std::cout << "Found solution for belief ";
 //            world->printBelief(pathTree[v].beliefState);
 //            std::cout << " with goal state " << v << ":" << std::endl;
 //            path->print(std::cout);
-
-            // simplify path
-            int worldIdx = pathTree[v].finalSateIdx;
-            std::cout << "Simplify path " << worldIdx << std::endl;
-            pdef_->setGoalState(goalStates[worldIdx], std::numeric_limits<double>::epsilon());
-            ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_, pdef_->getGoal(), pdef_->getOptimizationObjective());
-            psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*path), 20);
 
             pdef_->addSolutionPath(path);
         }
