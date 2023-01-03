@@ -62,6 +62,11 @@ namespace ompl
                 }
             }
 
+            void setPathOptimization(bool b)
+            {
+                specs_.optimizingPaths = b;
+            }
+
         // protected:
             /** \brief Representation of a motion
 

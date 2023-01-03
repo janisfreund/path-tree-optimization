@@ -45,7 +45,7 @@
 #include "ompl/base/World.h"
 
 const int NUM_OBJECTS = 4;
-const double SOLVE_TIME = 10;
+const double SOLVE_TIME = 30;
 
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
@@ -139,9 +139,9 @@ public:
         // set state validity checking for this space
         //si->setStateValidityChecker(isStateValid);
 
-        si->setStateValidityAndTargetChecker(isStateValid, targetFound);
-
         si->initWorld(NUM_OBJECTS, true);
+
+        si->setStateValidityAndTargetChecker(isStateValid, targetFound, *si->getWorld());
 
         // create POObjects based on NUM_OBJECTS
         for (int i = 0; i < NUM_OBJECTS; i++) {

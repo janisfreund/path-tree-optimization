@@ -106,16 +106,18 @@ void ompl::base::SpaceInformation::setStateValidityChecker(const StateValidityCh
     setStateValidityChecker(std::make_shared<FnStateValidityChecker>(this, svc));
 }
 
-void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc)
+void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc, ompl::base::World world)
 {
     class FnStateValidityAndTargetChecker : public StateValidityAndTargetChecker
     {
     public:
-        FnStateValidityAndTargetChecker(SpaceInformation *si, StateValidityWorldCheckerFn fn, TargetCheckerFn tc)
+        FnStateValidityAndTargetChecker(SpaceInformation *si, StateValidityWorldCheckerFn fn, TargetCheckerFn tc, World world)
                 : StateValidityAndTargetChecker(si), fn_(std::move(fn)), tc_(std::move(tc))
         {
+            w_ = world;
         }
 
+        //TODO not needed anymore
         bool isValid(const State *state, ompl::base::World world) const override
         {
             return fn_(state, world);
@@ -124,8 +126,9 @@ void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateV
         //TODO should not be called in theory, change later; atm always returns true
         bool isValid(const State *state) const override
         {
-            std::cout << "State validity can only be checked when a world is specified!\n";
-            return true;
+            //std::cout << "State validity can only be checked when a world is specified!\n";
+            //return true;
+            return fn_(state, w_);
         }
 
         std::vector<int> targetFound(const State *state) const override
@@ -136,12 +139,13 @@ void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateV
     protected:
         StateValidityWorldCheckerFn fn_;
         TargetCheckerFn tc_;
+        ompl::base::World w_;
     };
 
     if (!svc || !tc)
         throw Exception("Invalid function definition for state validity and target checking");
 
-    setStateValidityAndTargetChecker(std::make_shared<FnStateValidityAndTargetChecker>(this, svc, tc));
+    setStateValidityAndTargetChecker(std::make_shared<FnStateValidityAndTargetChecker>(this, svc, tc, world));
 }
 
 void ompl::base::SpaceInformation::setDefaultMotionValidator()

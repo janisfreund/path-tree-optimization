@@ -443,6 +443,8 @@ namespace ompl
             PlannerSolutionSetPtr solutions_;
 
             std::vector<State *> goalStates;
+
+
         };
     }
 }

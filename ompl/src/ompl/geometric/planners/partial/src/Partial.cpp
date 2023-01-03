@@ -766,21 +766,26 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             if (numSegments > 1) {
                 int i = static_cast<int>(pathR.size()) - 1;
                 int c = 0;
-                for (int segIdx = 0; segIdx < numSegments; segIdx++) {
+                for (int segIdx = numSegments - 1; segIdx >= 0; segIdx--) {
                     auto sPath(std::make_shared<PathGeometric>(si_));
                     for (; i >= 0; ) {
                         sPath->append(pathR[i]);
-                        if (observationIdx[segIdx] == c) {
-                            sPath->interpolate(20);
-
+                        if (segIdx > 0 && (static_cast<int>(pathR.size()) - 1 - observationIdx[segIdx - 1])  == c) {
                             // simplify
-                            int worldIdx = pathTree[v].finalSateIdx;
-                            pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
-                            world->setState(worldIdx);
-                            ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_, pdef_->getGoal(), pdef_->getOptimizationObjective());
-                            psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
+                            //sPath->interpolate(20);
+                            if (true/*specs_.optimizingPaths*/) {
+                                int worldIdx = pathTree[v].finalSateIdx;
+                                pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
+                                world->setState(worldIdx);
+                                ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
+                                                                                                      pdef_->getGoal(),
+                                                                                                      pdef_->getOptimizationObjective());
+                                psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
+                            }
 
                             segments.push_back(sPath);
+                            c++;
+                            i--;
                             break;
                         }
                         else if (i == 0) {
@@ -792,21 +797,17 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 }
 
                 for (std::shared_ptr<PathGeometric> pathSeg : segments) {
-                    path->append(*pathSeg);
+                    std::cout << "Segment: " << std::endl;
+                    for (int i = 0; i < static_cast<int>(pathSeg->getStateCount()); i++) {
+                        getSpaceInformation()->getStateSpace()->printState(pathSeg->getState(i), std::cout);
+                        path->append(pathSeg->getState(i));
+                    }
+                    std::cout << std::endl;
                 }
             } else {
                 for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
                     path->append(pathR[i]);
                 }
-
-                // simplify path
-                int worldIdx = pathTree[v].finalSateIdx;
-                pdef_->setGoalState(goalStates[worldIdx], std::numeric_limits<double>::epsilon());
-                world->setState(worldIdx);
-                ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_, pdef_->getGoal(), pdef_->getOptimizationObjective());
-                psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*path), 20);
-
-                segments.push_back(path);
             }
 
 //            std::cout << "Found solution for belief ";

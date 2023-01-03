@@ -199,7 +199,7 @@ namespace ompl
                 since there is one more level of indirection */
             void setStateValidityChecker(const StateValidityCheckerFn &svc);
 
-            void setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc);
+            void setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc, World world);
 
             void initWorld(int numObjects, bool changeableFinalStates) {
                 world_ = new World(numObjects, changeableFinalStates);

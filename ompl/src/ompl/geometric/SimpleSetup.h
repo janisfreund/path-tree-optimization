@@ -173,10 +173,10 @@ namespace ompl
                 si_->setStateValidityChecker(svc);
             }
 
-            void setStateValidityAndTargetChecker(const base::StateValidityWorldCheckerFn &svc, const base::TargetCheckerFn &tc)
+            void setStateValidityAndTargetChecker(const base::StateValidityWorldCheckerFn &svc, const base::TargetCheckerFn &tc, ompl::base::World world)
             {
                 std::cout << "Setting Checker." << std::endl;
-                si_->setStateValidityAndTargetChecker(svc, tc);
+                si_->setStateValidityAndTargetChecker(svc, tc, world);
                 std::cout << "Checker set." << std::endl;
             }
 
