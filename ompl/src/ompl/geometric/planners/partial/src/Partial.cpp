@@ -142,7 +142,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         std::cout << "New state sampled.\n";
         double rValue = rng_.uniform01();
         if (randomGraphIdx <= world->getNumWorldStates()) {
-            sampler_->sampleGoodCameraPositionNear(rstate, 0., 0.);
+            sampler_->sampleGoodCameraPositionNear(rstate, pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[0], pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[1]);
         }
         else if ((goal_s != nullptr) && rValue < goalBias_ && goal_s->canSample()) {
             goal_s->sampleGoal(rstate);
@@ -780,7 +780,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                                 ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
                                                                                                       pdef_->getGoal(),
                                                                                                       pdef_->getOptimizationObjective());
-                                psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
+                                //psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
+                                psk.simplifyMax(static_cast<ompl::geometric::PathGeometric &>(*sPath));
                             }
 
                             segments.push_back(sPath);

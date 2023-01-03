@@ -230,7 +230,9 @@ namespace ompl
             /** \brief Clear the goal. Memory is freed. */
             void clearGoal()
             {
-                goal_.reset();
+                if (goal_ != NULL) {
+                    goal_.reset();
+                }
             }
 
             /** \brief Return the current goal */
