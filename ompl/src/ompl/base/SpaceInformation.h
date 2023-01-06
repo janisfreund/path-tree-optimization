@@ -212,6 +212,9 @@ namespace ompl
             /** \brief Return the instance of the used state validity checker */
             const StateValidityCheckerPtr &getStateValidityChecker() const
             {
+                if (stateValidityAndTargetChecker_) {
+                    return stateValidityAndTargetChecker_;
+                }
                 return stateValidityChecker_;
             }
 

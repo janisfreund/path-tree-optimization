@@ -593,7 +593,8 @@ void ompl::tools::Benchmark::benchmark(const Request &req)
                         run["correct solution strict BOOLEAN"] = std::to_string(gsetup_->getSolutionPath().check());
                         gsetup_->getStateSpace()->setValidSegmentCountFactor(factor);
 
-                        if (req.simplify)
+                        // TODO segfault
+                        if (false /*req.simplify*/)
                         {
                             // simplify solution
                             time::point timeStart = time::now();
@@ -631,7 +632,8 @@ void ompl::tools::Benchmark::benchmark(const Request &req)
                 }
 
                 base::PlannerData pd(gsetup_ ? gsetup_->getSpaceInformation() : csetup_->getSpaceInformation());
-                planners_[i]->getPlannerData(pd);
+                // TODO segfault
+//                planners_[i]->getPlannerData(pd);
                 run["graph states INTEGER"] = std::to_string(pd.numVertices());
                 run["graph motions INTEGER"] = std::to_string(pd.numEdges());
 
@@ -663,10 +665,11 @@ void ompl::tools::Benchmark::benchmark(const Request &req)
 
                 // Add planner progress data from the planner progress
                 // collector if there was anything to report
-                if (planners_[i]->getPlannerProgressProperties().size() > 0)
-                {
-                    exp_.planners[i].runsProgressData.push_back(rp.getRunProgressData());
-                }
+                // TODO segfault
+//                if (planners_[i]->getPlannerProgressProperties().size() > 0)
+//                {
+//                    exp_.planners[i].runsProgressData.push_back(rp.getRunProgressData());
+//                }
             }
             catch (std::runtime_error &e)
             {

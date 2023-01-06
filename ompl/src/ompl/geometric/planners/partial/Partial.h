@@ -16,7 +16,7 @@
 #include <boost/config.hpp>
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
-#include <boost/graph/graphviz.hpp>
+//#include <boost/graph/graphviz.hpp>
 #include <chrono>
 
 namespace ompl
@@ -60,6 +60,9 @@ namespace ompl
                     if (nn_.at(i))
                         nn_.at(i)->clear();
                 }
+                pathTree.clear();
+                pathTreeFinalStates.clear();
+                completeGraphMap.clear();
             }
 
             void setPathOptimization(bool b)
@@ -155,6 +158,7 @@ namespace ompl
 
             GraphD pathTree;
             std::vector<VertexTraitD> pathTreeFinalStates;
+            std::map<int, int> completeGraphMap;
         };
     }
 }

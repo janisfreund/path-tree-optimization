@@ -119,12 +119,13 @@ double ompl::geometric::PathGeometric::lengthBase(int entries) const
 double ompl::geometric::PathGeometric::clearance() const
 {
     double c = 0.0;
-    for (auto state : states_)
-        c += si_->getStateValidityChecker()->clearance(state);
-    if (states_.empty())
-        c = std::numeric_limits<double>::infinity();
-    else
-        c /= (double)states_.size();
+//    for (auto state : states_) {
+//        c += si_->getStateValidityChecker()->clearance(state);
+//    }
+//    if (states_.empty())
+//        c = std::numeric_limits<double>::infinity();
+//    else
+//        c /= (double)states_.size();
     return c;
 }
 

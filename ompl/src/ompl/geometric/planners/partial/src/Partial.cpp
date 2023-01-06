@@ -194,7 +194,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
             // find the states in the tree within radius
             std::vector<Motion*> nmotionVec;
-            nn_.at(worldIdx)->nearestR(rmotion, 2.0, nmotionVec);
+            nn_.at(worldIdx)->nearestR(rmotion, 0.5, nmotionVec);
 
             // buggy -> use only nearest
 //            nn_.at(worldIdx)->nearestK(rmotion, 3, nmotionVec);
@@ -408,6 +408,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 allBeliefGraphVertices.push_back(v);
                 graphMap[idx][node] = v;
                 graphMapReverse[idx][v] = node;
+                completeGraphMap[v] = node;
 
                 VertexTrait a = add_vertex(singleBeliefGraph[idx]);
                 singleBeliefGraph[idx][a].state = randomGraph[node].state;
@@ -892,6 +893,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                 if (beliefGraph[boost::edge(it.dereference(), currVertex, beliefGraph).first].isWorldConnection) {
                     if (isConn) {
 //                        if (visited.find(it.dereference()) == visited.end()) {
+                            std::cout << "Observation at state " << beliefGraph[it.dereference()].label << " corresponds to camera image " << (completeGraphMap.find(std::stoi(beliefGraph[it.dereference()].label))->second + 1) << std::endl;
                             VertexTraitD w = add_vertex(pathTree);
                             pathTree[w].state = beliefGraph[it.dereference()].state;
                             pathTree[w].fontcolor = beliefGraph[it.dereference()].fontcolor;
@@ -952,42 +954,42 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
 
 // save graph as png
 void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
