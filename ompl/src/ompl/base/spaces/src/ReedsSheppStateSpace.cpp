@@ -709,3 +709,55 @@ bool ompl::base::ReedsSheppMotionValidator::checkMotion(const State *s1, const S
 
     return result;
 }
+
+bool ompl::base::ReedsSheppMotionValidator::checkMotion(const State *s1, const State *s2, World world) const
+{
+    /* assume motion starts in a valid configuration so s1 is valid */
+    if (!si_->isValid(s2, world))
+        return false;
+
+    bool result = true, firstTime = true;
+    ReedsSheppStateSpace::ReedsSheppPath path;
+    int nd = stateSpace_->validSegmentCount(s1, s2);
+
+    /* initialize the queue of test positions */
+    std::queue<std::pair<int, int>> pos;
+    if (nd >= 2)
+    {
+        pos.emplace(1, nd - 1);
+
+        /* temporary storage for the checked state */
+        State *test = si_->allocState();
+
+        /* repeatedly subdivide the path segment in the middle (and check the middle) */
+        while (!pos.empty())
+        {
+            std::pair<int, int> x = pos.front();
+
+            int mid = (x.first + x.second) / 2;
+            stateSpace_->interpolate(s1, s2, (double)mid / (double)nd, firstTime, path, test);
+
+            if (!si_->isValid(test, world))
+            {
+                result = false;
+                break;
+            }
+
+            pos.pop();
+
+            if (x.first < mid)
+                pos.emplace(x.first, mid - 1);
+            if (x.second > mid)
+                pos.emplace(mid + 1, x.second);
+        }
+
+        si_->freeState(test);
+    }
+
+    if (result)
+        valid_++;
+    else
+        invalid_++;
+
+    return result;
+}

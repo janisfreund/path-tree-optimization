@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <mutex>
 #include <utility>
+#include <ompl/base/spaces/ReedsSheppStateSpace.h>
 
 /// @cond IGNORE
 namespace ompl
@@ -522,10 +523,19 @@ void ompl::base::ProblemDefinition::setSolutionNonExistenceProof(
 
 void ompl::base::ProblemDefinition::addGoalState(std::vector<double> goalState) {
     State *goal = si_->allocState();
-    int i = 0;
-    for (double d : goalState) {
-        goal->as<base::RealVectorBeliefStateSpace::StateType>()->values[i] = d;
-        i++;
+
+    // assume 3 dims = car TODO change
+    if (static_cast<int>(goalState.size()) == 3) {
+        goal->as<base::ReedsSheppStateSpace::StateType>()->setX(goalState[0]);
+        goal->as<base::ReedsSheppStateSpace::StateType>()->setY(goalState[1]);
+        goal->as<base::ReedsSheppStateSpace::StateType>()->setYaw(goalState[2]);
+    } else {
+        int i = 0;
+        for (double d : goalState) {
+            goal->as<base::RealVectorBeliefStateSpace::StateType>()->values[i] = d;
+            i++;
+        }
     }
+
     goalStates.push_back(goal);
 }

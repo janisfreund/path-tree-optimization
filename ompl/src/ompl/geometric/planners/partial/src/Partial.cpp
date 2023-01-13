@@ -175,6 +175,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         // check which objects are visible from sampled state
         // TODO currently using camera image taken in a world in which all objects are present
         world->setState(world->getNumWorldStates() - 1);
+
         randomGraph[v].observableObjects = si_->targetFound(dstate);
 
 //        randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
@@ -558,6 +559,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         pq.pop();
         Graph::adjacency_iterator it, end;
         std::tie(it, end) = boost::adjacent_vertices(v, beliefGraph);
+
         // iterate over all adjacent vertices
         for (; it != end; it++) {
             VertexTrait parent = it.dereference();
@@ -617,7 +619,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::cout << "Costs:" << std::endl;
     int n = 0;
     for (double c : costs) {
-        std::cout << n << ": " << c << std::endl;
+        std::cout << n << ": " << c << " (" << world->getBeliefIdx(beliefGraph[n].beliefState) << ")" << std::endl;
         n++;
     }
 
