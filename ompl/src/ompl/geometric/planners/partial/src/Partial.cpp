@@ -130,8 +130,14 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
         world->setState(sampledWorldIdx);
 
-        // set goal to goal state of the sampled world
-        pdef_->setGoalState(goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
+        if (static_cast<int>(goalStates.size()) == numWorldStates) {
+            // set goal to goal state of the sampled world
+            pdef_->setGoalState(goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
+        } else {
+            // set random goal
+            int ridx = rand() % static_cast<int>(goalStates.size());
+            pdef_->setGoalState(goalStates[ridx], std::numeric_limits<double>::epsilon());
+        }
 
         // get a handle to the Goal from the ompl::base::ProblemDefinition member, pdef_
         base::Goal *goal = pdef_->getGoal().get();
@@ -319,7 +325,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                    dstate->as<ompl::base::RealVectorStateSpace::StateType>();
 //            std::cout << "Goal satisfied with state " << randomGraphIdx << ": [" << state3D->values[0] << ", " << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
             randomGraph[randomGraphIdx].fontcolor = "blue";
-            randomGraph[randomGraphIdx].finalSateIdx = sampledWorldIdx;
+            randomGraph[randomGraphIdx].finalSateIdx = sampledWorldIdx; // TODO rIdx
             randomGraphFinalStates.push_back(randomGraphIdx);
         }
 
@@ -390,16 +396,31 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 beliefGraph[v].beliefState = b;
                 // check if final random graph node is also final in belief
                 if (beliefGraph[v].fontcolor == "blue") {
-                    if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3)) {
-                        beliefGraph[v].fontcolor = "";
-                        std::cout << "No final state: State " << v << " (" << node << ") with belief ";
-                        world->printBelief(b);
-                        std::cout << std::endl;
-                    }
-                    else {
-                        std::cout << "New final state: State " << v << " (" << node << ") with belief ";
-                        world->printBelief(b);
-                        std::cout << std::endl;
+                    // assume dims = 3 -> car TODO change, not necessary because of collision with poobjects
+                    if (si_->getStateDimension() == 3) {
+//                        if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx)) < 1e-3)) {
+//                            beliefGraph[v].fontcolor = "";
+//                            std::cout << "No final state: State " << v << " (" << node << ") with belief ";
+//                            world->printBelief(b);
+//                            std::cout << std::endl;
+//                        }
+//                        else {
+//                            std::cout << "New final state: State " << v << " (" << node << ") with belief ";
+//                            world->printBelief(b);
+//                            std::cout << std::endl;
+//                        }
+                    } else {
+                        if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3)) {
+                            beliefGraph[v].fontcolor = "";
+                            std::cout << "No final state: State " << v << " (" << node << ") with belief ";
+                            world->printBelief(b);
+                            std::cout << std::endl;
+                        }
+                        else {
+                            std::cout << "New final state: State " << v << " (" << node << ") with belief ";
+                            world->printBelief(b);
+                            std::cout << std::endl;
+                        }
                     }
                 }
                 beliefGraph[v].color = colors[idx % static_cast<int>(colors.size())];
@@ -542,7 +563,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 final = true;
             }
         }
-        if(beliefGraph[v].fontcolor == "blue" && fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3/*&& final*/) {
+        if(beliefGraph[v].fontcolor == "blue" /*&& fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3/*&& final*/) {
             costs.push_back(0);
             pq.push(std::make_pair(0, v));
         }
