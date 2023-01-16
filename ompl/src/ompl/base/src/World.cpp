@@ -208,3 +208,17 @@ std::pair<std::vector<int>, std::vector<ompl::base::BeliefState>> ompl::base::Wo
     }
     return std::make_pair(validIdx, validBeliefs);
 }
+
+std::vector<float> ompl::base::World::beliefToWorld(BeliefState belief) {
+    std::vector<float> pWorld;
+    for (int objIdx = 0; objIdx < numObjects_; objIdx++) {
+        float pObj = 0.;
+        int worldStateIdx = 0;
+        for (float b : belief) {
+            pObj += getStateIntFromObjectState(worldStates_.at(worldStateIdx)).at(objIdx) * b;
+            worldStateIdx++;
+        }
+        pWorld.push_back(pObj);
+    }
+    return pWorld;
+}

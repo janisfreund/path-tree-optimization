@@ -130,13 +130,16 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
         world->setState(sampledWorldIdx);
 
+        int finStateIdx;
         if (static_cast<int>(goalStates.size()) == numWorldStates) {
             // set goal to goal state of the sampled world
             pdef_->setGoalState(goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
+            finStateIdx = sampledWorldIdx;
         } else {
             // set random goal
             int ridx = rand() % static_cast<int>(goalStates.size());
             pdef_->setGoalState(goalStates[ridx], std::numeric_limits<double>::epsilon());
+            finStateIdx = ridx;
         }
 
         // get a handle to the Goal from the ompl::base::ProblemDefinition member, pdef_
@@ -325,7 +328,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                    dstate->as<ompl::base::RealVectorStateSpace::StateType>();
 //            std::cout << "Goal satisfied with state " << randomGraphIdx << ": [" << state3D->values[0] << ", " << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
             randomGraph[randomGraphIdx].fontcolor = "blue";
-            randomGraph[randomGraphIdx].finalSateIdx = sampledWorldIdx; // TODO rIdx
+            randomGraph[randomGraphIdx].finalSateIdx = finStateIdx;
             randomGraphFinalStates.push_back(randomGraphIdx);
         }
 
@@ -637,7 +640,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     timePolicyExtraction = (std::chrono::duration_cast<std::chrono::milliseconds>(t_policy_end - t_policy_start).count()) / 1000.0;
 
     // print costs
-    std::cout << "Costs:" << std::endl;
+    std::cout << "Costs: " << std::endl;
     int n = 0;
     for (double c : costs) {
         std::cout << n << ": " << c << " (" << world->getBeliefIdx(beliefGraph[n].beliefState) << ")" << std::endl;
@@ -731,6 +734,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     }
     // return optimal path tree
     else if (returnPathTree) {
+        std::vector<std::vector<float>> pWorlds;
         std::cout << "Worlds: ";
         int c = 0;
         for (std::vector<base::ObjectState> w : world->getWorldStates()) {
@@ -741,6 +745,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
         // return solution path
         for (VertexTraitD v : pathTreeFinalStates) {
+            pWorlds.push_back(world->beliefToWorld(pathTree[v].beliefState));
             double dis = 0;
             std::vector<int> observationIdx;
             int planIdx = pathTree[v].finalSateIdx;
@@ -842,6 +847,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
             pdef_->addSolutionPath(path);
         }
+
+        pdef_->setPWorlds(pWorlds);
     }
     // return nn paths
     else if (returnNN) {

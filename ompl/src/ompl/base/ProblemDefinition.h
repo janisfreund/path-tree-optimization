@@ -414,6 +414,14 @@ namespace ompl
                 return goalStates;
             }
 
+            void setPWorlds(std::vector<std::vector<float>> pW) {
+                pWorlds = pW;
+            }
+
+            std::vector<std::vector<float>> getPWorlds() {
+                return pWorlds;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -446,7 +454,7 @@ namespace ompl
 
             std::vector<State *> goalStates;
 
-
+            std::vector<std::vector<float>> pWorlds;
         };
     }
 }

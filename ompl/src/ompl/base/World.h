@@ -173,6 +173,8 @@ namespace ompl
                 return p;
             }
 
+            std::vector<float> beliefToWorld(BeliefState b);
+
             void printBelief(BeliefState bs) {
                 std::cout << "[";
                 for (float f : bs) {
