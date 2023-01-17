@@ -422,6 +422,38 @@ namespace ompl
                 return pWorlds;
             }
 
+            void addRawSolution(std::vector<State *> sol) {
+                solutionsRaw.push_back(sol);
+            }
+
+            std::vector<std::vector<State *>> getRawSolutions() {
+                return solutionsRaw;
+            }
+
+            void addObservationPoint(std::pair<State *, std::vector<int>> p) {
+                observationPoints.push_back(p);
+            }
+
+            std::vector<std::pair<State *, std::vector<int>>> getObservationPoints() {
+                return observationPoints;
+            }
+
+            std::vector<State *> getObservationPointStates() {
+                std::vector<State *> vec;
+                for (std::pair<State *, std::vector<int>> p : observationPoints) {
+                    vec.push_back(p.first);
+                }
+                return vec;
+            }
+
+            std::vector<std::vector<int>> getObservationPointObservations() {
+                std::vector<std::vector<int>> vec;
+                for (std::pair<State *, std::vector<int>> p : observationPoints) {
+                    vec.push_back(p.second);
+                }
+                return vec;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -455,6 +487,8 @@ namespace ompl
             std::vector<State *> goalStates;
 
             std::vector<std::vector<float>> pWorlds;
+            std::vector<std::vector<State *>> solutionsRaw;
+            std::vector<std::pair<State *, std::vector<int>>> observationPoints;
         };
     }
 }

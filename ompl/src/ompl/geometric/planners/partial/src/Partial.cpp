@@ -658,6 +658,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     pathTree[v].color = beliefGraph[currVertex].color;
     pathTree[v].beliefState = beliefGraph[currVertex].beliefState;
     pathTree[v].label = beliefGraph[currVertex].label;
+    pathTree[v].observableObjects = beliefGraph[currVertex].observableObjects;
 //    getSpaceInformation()->getStateSpace()->printState(pathTree[v].state, std::cout);
     pathTree[v].pos = beliefGraph[currVertex].pos;
     constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{});
@@ -775,6 +776,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     EdgeTraitD e = it.dereference();
                     if (pathTree[e].color == "red") {
                         observationIdx.push_back(c);
+                        pdef_->addObservationPoint(std::make_pair(pathTree[nextNode].state, pathTree[nextNode].observableObjects));
                     }
                     dis += si_->getStateSpace()->distanceBase(pathTree[currNode].state, pathTree[nextNode].state, 2);
                     currNode = nextNode;
@@ -840,12 +842,18 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 }
             }
 
+            std::vector<base::State *> pathRaw;
+            for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
+                pathRaw.push_back(pathR[i]);
+            }
+
 //            std::cout << "Found solution for belief ";
 //            world->printBelief(pathTree[v].beliefState);
 //            std::cout << " with goal state " << v << ":" << std::endl;
 //            path->print(std::cout);
 
             pdef_->addSolutionPath(path);
+            pdef_->addRawSolution(pathRaw);
         }
 
         pdef_->setPWorlds(pWorlds);
@@ -931,6 +939,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                             pathTree[w].color = beliefGraph[it.dereference()].color;
                             pathTree[w].beliefState = beliefGraph[it.dereference()].beliefState;
                             pathTree[w].label = beliefGraph[it.dereference()].label;
+                            pathTree[w].observableObjects = beliefGraph[it.dereference()].observableObjects;
                             if (pathTree[w].fontcolor == "blue") {
                                 pathTreeFinalStates.push_back(w);
                             }
@@ -964,6 +973,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         pathTree[u].color = beliefGraph[bestVertex].color;
         pathTree[u].beliefState = beliefGraph[bestVertex].beliefState;
         pathTree[u].label = beliefGraph[bestVertex].label;
+        pathTree[u].observableObjects = beliefGraph[bestVertex].observableObjects;
         if (pathTree[u].fontcolor == "blue") {
             pathTreeFinalStates.push_back(u);
         }
