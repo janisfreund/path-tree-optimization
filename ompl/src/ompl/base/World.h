@@ -94,13 +94,7 @@ namespace ompl
                 return objectStates_;
             }
 
-            std::vector<int> getStateInt() {
-                std::vector<int> intStates;
-                for (ObjectState objectState : objectStates_) {
-                    intStates.push_back(static_cast<int>(objectState));
-                }
-                return intStates;
-            }
+            std::vector<int> getStateInt();
 
             std::vector<int> getStateIntFromObjectState(std::vector<ObjectState> st) {
                 std::vector<int> intStates;

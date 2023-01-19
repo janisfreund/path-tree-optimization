@@ -23,9 +23,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::cout << "Started solving process using planner Partial.\n";
     std::cout << "Using newest version\n";
 
-    bool changeableFinalStates = true;
+    ompl::base::World *world = si_->getWorld();
+    int numWorldStates = world->getNumWorldStates();
 
-    // define final states for each world TODO
+    // define final states for each world
     std::vector<base::State *> goalStates = pdef_->getGoalStates();
 
     std::vector<double> distancesDirect;
@@ -53,9 +54,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // Ensure that we have a state sampler
     if (!sampler_)
         sampler_ = si_->allocStateSampler();
-
-    ompl::base::World *world = si_->getWorld();
-    int numWorldStates = world->getNumWorldStates();
 
     std::vector<std::string> colors = {"aquamarine", "blue", "coral", "cyan", "darkred", "gold", "lime", "webpurple"};
 
@@ -130,16 +128,17 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
         world->setState(sampledWorldIdx);
 
-        int finStateIdx;
-        if (static_cast<int>(goalStates.size()) == numWorldStates) {
-            // set goal to goal state of the sampled world
-            pdef_->setGoalState(goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
-            finStateIdx = sampledWorldIdx;
-        } else {
-            // set random goal
-            int ridx = rand() % static_cast<int>(goalStates.size());
-            pdef_->setGoalState(goalStates[ridx], std::numeric_limits<double>::epsilon());
-            finStateIdx = ridx;
+        int finStateIdx = sampledWorldIdx;
+        if (static_cast<int>(goalStates.size()) != 0) {
+            if (static_cast<int>(goalStates.size()) == numWorldStates) {
+                // set goal to goal state of the sampled world
+                pdef_->setGoalState(goalStates[sampledWorldIdx], std::numeric_limits<double>::epsilon());
+            } else {
+                // set random goal
+                int ridx = rand() % static_cast<int>(goalStates.size());
+                pdef_->setGoalState(goalStates[ridx], std::numeric_limits<double>::epsilon());
+                finStateIdx = ridx;
+            }
         }
 
         // get a handle to the Goal from the ompl::base::ProblemDefinition member, pdef_
@@ -388,31 +387,31 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //        std::cout << "Added to RandomGraph: [" << state3D->values[0] << ", "
 //                  << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
 
+        std::cout << "Node Idx: " << nodesCount << std::endl;
         int idx = 0;
         for (base::BeliefState b : beliefStates) {
+            std::cout << "Belief Idx: " << idx << std::endl;
             if (activeNodes[idx][node]) {
+
+                std::cout << "test 1" << idx << std::endl;
+
                 VertexTrait v = add_vertex(beliefGraph);
                 beliefGraph[v].state = randomGraph[node].state;
                 beliefGraph[v].observableObjects = randomGraph[node].observableObjects;
                 beliefGraph[v].fontcolor = randomGraph[node].fontcolor;
                 beliefGraph[v].finalSateIdx = randomGraph[node].finalSateIdx;
                 beliefGraph[v].beliefState = b;
+
+                std::cout << "test 2" << idx << std::endl;
+
                 // check if final random graph node is also final in belief
                 if (beliefGraph[v].fontcolor == "blue") {
-                    // assume dims = 3 -> car TODO change, not necessary because of collision with poobjects
+                    // assume dims = 3 -> car
                     if (si_->getStateDimension() == 3) {
-//                        if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx)) < 1e-3)) {
-//                            beliefGraph[v].fontcolor = "";
-//                            std::cout << "No final state: State " << v << " (" << node << ") with belief ";
-//                            world->printBelief(b);
-//                            std::cout << std::endl;
-//                        }
-//                        else {
-//                            std::cout << "New final state: State " << v << " (" << node << ") with belief ";
-//                            world->printBelief(b);
-//                            std::cout << std::endl;
-//                        }
                     } else {
+
+                        std::cout << "test 3" << idx << std::endl;
+
                         if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3)) {
                             beliefGraph[v].fontcolor = "";
                             std::cout << "No final state: State " << v << " (" << node << ") with belief ";
@@ -426,6 +425,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                         }
                     }
                 }
+
+                std::cout << "test 4" << idx << std::endl;
+
                 beliefGraph[v].color = colors[idx % static_cast<int>(colors.size())];
                 beliefGraph[v].pos = randomGraph[node].pos;
                 beliefGraph[v].label = std::to_string(nodesCount);
@@ -434,6 +436,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 graphMap[idx][node] = v;
                 graphMapReverse[idx][v] = node;
                 completeGraphMap[v] = node;
+
+                std::cout << "test 5" << idx << std::endl;
+
 
                 VertexTrait a = add_vertex(singleBeliefGraph[idx]);
                 singleBeliefGraph[idx][a].state = randomGraph[node].state;
@@ -444,12 +449,18 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 singleBeliefGraph[idx][a].beliefState = b;
                 singleBeliefGraph[idx][a].pos = randomGraph[node].pos;
                 singleBeliefGraph[idx][a].label = std::to_string(nodesCount);
+
+                std::cout << "test 6" << idx << std::endl;
+
                 // check if final random graph node is also final in belief
                 if (singleBeliefGraph[idx][a].fontcolor == "blue") {
                     if (!fabs(singleBeliefGraph[idx][a].beliefState.at(singleBeliefGraph[idx][a].finalSateIdx) - 1) < 1e-3) {
                         singleBeliefGraph[idx][a].fontcolor = "";
                     }
                 }
+
+                std::cout << "test 7" << idx << std::endl;
+
                 singleGraphMap[idx][node] = a;
 
                 nodesCount++;
@@ -513,7 +524,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         //std::set<int> createdConnections;
         for (int nodeIdx = 0; nodeIdx < static_cast<int>(beliefGraphVertices[beliefIdx].size()); nodeIdx++) {
             VertexTrait v = beliefGraphVertices[beliefIdx].at(nodeIdx);
-            // TODO handle multiple objects at once
             for (int objectIdx : beliefGraph[v].observableObjects) {
                 std::vector<base::BeliefState> newBeliefs = world->observe(beliefGraph[v].beliefState, objectIdx);
                 std::cout << "From belief " << world->getBeliefIdx(beliefGraph[v].beliefState) << " (";
@@ -526,7 +536,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                         std::cout << newBeliefIdx << " (";
                         world->printBelief(belief);
                         std::cout << ") ,";
-                        if (static_cast<int>(beliefGraphVertices[newBeliefIdx].size()) > nodeIdx) {
+                        //if (static_cast<int>(beliefGraphVertices[newBeliefIdx].size()) > nodeIdx) {
                             //if (createdConnections.find(newBeliefIdx) == createdConnections.end()) {
                                 // std::pair<EdgeTrait , bool> p = add_edge(v, beliefGraphVertices[newBeliefIdx].at(nodeIdx), beliefGraph);
                                 std::pair<EdgeTrait , bool> p = add_edge(v, graphMap[newBeliefIdx].find(graphMapReverse[beliefIdx].find(v)->second)->second, beliefGraph);
@@ -536,7 +546,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                                 beliefGraph[beliefGraphVertices[beliefIdx].at(nodeIdx)].beliefChildren.push_back(beliefGraphVertices[newBeliefIdx].at(nodeIdx));
                                 //createdConnections.insert(newBeliefIdx);
                             //}
-                        }
+                        //}
                     }
                     std::cout << std::endl;
                 }
@@ -790,7 +800,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             world->printBelief(pathTree[currNode].beliefState);
             std::cout << std::endl;
 
-            distancesPlanned.at(planIdx) = dis;
+            if (static_cast<int>(distancesPlanned.size()) > planIdx) {
+                distancesPlanned.at(planIdx) = dis;
+            }
             int numSegments = static_cast<int>(observationIdx.size()) + 1;
 
             std::vector<std::shared_ptr<PathGeometric>> segments;
@@ -805,14 +817,25 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                             // simplify
                             //sPath->interpolate(20);
                             if (true/*specs_.optimizingPaths*/) {
-                                int worldIdx = pathTree[v].finalSateIdx;
-                                pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
+                                std::vector<int> compatibleWorld;
+                                for (float f : world->beliefToWorld(pathTree[v].beliefState)) {
+                                    if (fabs(f) < 1e-3) {
+                                        compatibleWorld.push_back(0);
+                                    } else {
+                                        compatibleWorld.push_back(1);
+                                    }
+                                }
+                                int worldIdx = world->getStateIdx(compatibleWorld);
+                                pdef_->setGoalState(pathR[i/*static_cast<int>(pathR.size()) - 1 - i*/], std::numeric_limits<double>::epsilon());
                                 world->setState(worldIdx);
                                 ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
                                                                                                       pdef_->getGoal(),
                                                                                                       pdef_->getOptimizationObjective());
-                                //psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
-                                psk.simplifyMax(static_cast<ompl::geometric::PathGeometric &>(*sPath));
+//                                psk.reduceVertices(*sPath, 100, 100, 1.);
+                                psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 100, 100);
+//                                psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
+//                                psk.perturbPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 2, 1000, 1000, 0.005);
+//                                psk.simplifyMax(static_cast<ompl::geometric::PathGeometric &>(*sPath));
                             }
 
                             segments.push_back(sPath);
@@ -821,6 +844,27 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                             break;
                         }
                         else if (i == 0) {
+                            if (true/*specs_.optimizingPaths*/) {
+                                std::vector<int> compatibleWorld;
+                                for (float f : world->beliefToWorld(pathTree[v].beliefState)) {
+                                    if (fabs(f) < 1e-3) {
+                                        compatibleWorld.push_back(0);
+                                    } else {
+                                        compatibleWorld.push_back(1);
+                                    }
+                                }
+                                int worldIdx = world->getStateIdx(compatibleWorld);
+                                pdef_->setGoalState(pathR[i/*static_cast<int>(pathR.size()) - 1 - i*/], std::numeric_limits<double>::epsilon());
+                                world->setState(worldIdx);
+                                ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
+                                                                                                      pdef_->getGoal(),
+                                                                                                      pdef_->getOptimizationObjective());
+//                                psk.reduceVertices(*sPath, 100, 100, 1.);
+                                psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 100, 100);
+//                                psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
+//                                psk.perturbPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 2, 1000, 1000, 0.005);
+//                                psk.simplifyMax(static_cast<ompl::geometric::PathGeometric &>(*sPath));
+                            }
                             segments.push_back(sPath);
                         }
                         c++;

@@ -64,8 +64,8 @@ ompl::geometric::PathSimplifier::PathSimplifier(base::SpaceInformationPtr si, co
     {
         obj_ = std::make_shared<base::PathLengthOptimizationObjective>(si_);
     }
-    rng_.setSeed(0);
-    rng_.setLocalSeed(0);
+//    rng_.setSeed(0);
+//    rng_.setLocalSeed(0);
 }
 
 bool ompl::geometric::PathSimplifier::freeStates() const
@@ -126,6 +126,9 @@ void ompl::geometric::PathSimplifier::smoothBSpline(PathGeometric &path, unsigne
 bool ompl::geometric::PathSimplifier::reduceVertices(PathGeometric &path, unsigned int maxSteps,
                                                      unsigned int maxEmptySteps, double rangeRatio)
 {
+//    std::cout << "Path w/o simplification" << std::endl;
+//    path.print(std::cout);
+
     if (path.getStateCount() < 3)
         return false;
 
@@ -148,7 +151,9 @@ bool ompl::geometric::PathSimplifier::reduceVertices(PathGeometric &path, unsign
         std::vector<base::State *> newStates(2);
         newStates[0] = states.front();
         newStates[1] = states.back();
+
         states.swap(newStates);
+
         result = true;
     }
     else
@@ -183,6 +188,8 @@ bool ompl::geometric::PathSimplifier::reduceVertices(PathGeometric &path, unsign
                 result = true;
             }
         }
+//    std::cout << "Path with simplification" << std::endl;
+//    path.print(std::cout);
     return result;
 }
 

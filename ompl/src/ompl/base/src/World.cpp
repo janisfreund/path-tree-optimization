@@ -222,3 +222,11 @@ std::vector<float> ompl::base::World::beliefToWorld(BeliefState belief) {
     }
     return pWorld;
 }
+
+std::vector<int> ompl::base::World::getStateInt() {
+    std::vector<int> intStates;
+    for (ObjectState objectState : objectStates_) {
+        intStates.push_back(static_cast<int>(objectState));
+    }
+    return intStates;
+}
