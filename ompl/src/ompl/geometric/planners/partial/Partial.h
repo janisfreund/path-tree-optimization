@@ -16,7 +16,6 @@
 #include <boost/config.hpp>
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
-#include <boost/graph/graphml.hpp>
 //#include <boost/graph/graphviz.hpp>
 #include <chrono>
 
@@ -57,9 +56,13 @@ namespace ompl
             {
                 Planner::clear();
                 sampler_.reset();
+                freeMemory();
                 for (int i = 0; i < si_->getWorld()->getNumWorldStates(); i++) {
                     if (nn_.at(i))
                         nn_.at(i)->clear();
+                }
+                for (int i = 0; i < static_cast<int>(lastGoalMotion_.size()); i++) {
+                    lastGoalMotion_[i] = nullptr;
                 }
                 pathTree.clear();
                 pathTreeFinalStates.clear();
@@ -140,6 +143,11 @@ namespace ompl
 
             void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
 
+            void getPlannerData(base::PlannerData &data) const override;
+
+            /** \brief Free the memory allocated by this planner */
+            void freeMemory();
+
             void saveGraph(Graph g, std::string name, bool useLabels, bool usePos);
             void saveGraph(GraphD g, std::string name, bool useLabels, bool usePos);
 
@@ -156,6 +164,8 @@ namespace ompl
 
             /** \brief The random number generator */
             RNG rng_;
+
+            std::vector<Motion *> lastGoalMotion_;
 
             GraphD pathTree;
             std::vector<VertexTraitD> pathTreeFinalStates;

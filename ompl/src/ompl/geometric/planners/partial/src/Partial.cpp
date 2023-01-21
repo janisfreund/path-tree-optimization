@@ -14,7 +14,7 @@ ompl::geometric::Partial::Partial(const base::SpaceInformationPtr &si) : base::P
 
 ompl::geometric::Partial::~Partial()
 {
-    // freeMemory();
+    freeMemory();
 }
 
 ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::PlannerTerminationCondition &ptc) {
@@ -25,6 +25,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     ompl::base::World *world = si_->getWorld();
     int numWorldStates = world->getNumWorldStates();
+
+    for (int i = 0; i < numWorldStates; i++) {
+        lastGoalMotion_.push_back(nullptr);
+    }
 
     // define final states for each world
     std::vector<base::State *> goalStates = pdef_->getGoalStates();
@@ -301,6 +305,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 bool sat = goal->isSatisfied(dstate, &dist);
                 if (sat) {
                     solution[worldIdx] = nmotion;
+                    lastGoalMotion_[worldIdx] = solution[worldIdx];
 //                    bool allWorldsSolved = true;
 //                    for (Motion *s: solution) {
 //                        if (s == nullptr) {
@@ -392,9 +397,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         for (base::BeliefState b : beliefStates) {
             std::cout << "Belief Idx: " << idx << std::endl;
             if (activeNodes[idx][node]) {
-
-                std::cout << "test 1" << idx << std::endl;
-
                 VertexTrait v = add_vertex(beliefGraph);
                 beliefGraph[v].state = randomGraph[node].state;
                 beliefGraph[v].observableObjects = randomGraph[node].observableObjects;
@@ -402,16 +404,11 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 beliefGraph[v].finalSateIdx = randomGraph[node].finalSateIdx;
                 beliefGraph[v].beliefState = b;
 
-                std::cout << "test 2" << idx << std::endl;
-
                 // check if final random graph node is also final in belief
                 if (beliefGraph[v].fontcolor == "blue") {
                     // assume dims = 3 -> car
                     if (si_->getStateDimension() == 3) {
                     } else {
-
-                        std::cout << "test 3" << idx << std::endl;
-
                         if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3)) {
                             beliefGraph[v].fontcolor = "";
                             std::cout << "No final state: State " << v << " (" << node << ") with belief ";
@@ -425,9 +422,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                         }
                     }
                 }
-
-                std::cout << "test 4" << idx << std::endl;
-
                 beliefGraph[v].color = colors[idx % static_cast<int>(colors.size())];
                 beliefGraph[v].pos = randomGraph[node].pos;
                 beliefGraph[v].label = std::to_string(nodesCount);
@@ -436,9 +430,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 graphMap[idx][node] = v;
                 graphMapReverse[idx][v] = node;
                 completeGraphMap[v] = node;
-
-                std::cout << "test 5" << idx << std::endl;
-
 
                 VertexTrait a = add_vertex(singleBeliefGraph[idx]);
                 singleBeliefGraph[idx][a].state = randomGraph[node].state;
@@ -450,16 +441,12 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 singleBeliefGraph[idx][a].pos = randomGraph[node].pos;
                 singleBeliefGraph[idx][a].label = std::to_string(nodesCount);
 
-                std::cout << "test 6" << idx << std::endl;
-
                 // check if final random graph node is also final in belief
                 if (singleBeliefGraph[idx][a].fontcolor == "blue") {
                     if (!fabs(singleBeliefGraph[idx][a].beliefState.at(singleBeliefGraph[idx][a].finalSateIdx) - 1) < 1e-3) {
                         singleBeliefGraph[idx][a].fontcolor = "";
                     }
                 }
-
-                std::cout << "test 7" << idx << std::endl;
 
                 singleGraphMap[idx][node] = a;
 
@@ -832,7 +819,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                                                                                                       pdef_->getGoal(),
                                                                                                       pdef_->getOptimizationObjective());
 //                                psk.reduceVertices(*sPath, 100, 100, 1.);
-                                psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 100, 100);
+                                psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), sPath->getStateCount() * 50, sPath->getStateCount() * 50);
 //                                psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*sPath), 20);
 //                                psk.perturbPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 2, 1000, 1000, 0.005);
 //                                psk.simplifyMax(static_cast<ompl::geometric::PathGeometric &>(*sPath));
@@ -951,8 +938,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::cout << std::endl << std::endl;
 
     // clear memory
-//    if (rmotion->state != nullptr)
-//        si_->freeState(rmotion->state);
+    if (rmotion->state != nullptr)
+        si_->freeState(rmotion->state);
     delete rmotion;
 
     if (!worldsUnsolved.empty()) {
@@ -1034,6 +1021,47 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
             break;
         }
     }
+}
+
+void ompl::geometric::Partial::getPlannerData(base::PlannerData &data) const
+{
+    // add all edges and start state from nn structure (better belief graph?) to data
+    Planner::getPlannerData(data);
+
+    std::vector<Motion *> motions;
+    for (std::shared_ptr<NearestNeighbors<Motion *>> nn : nn_) {
+        if (nn)
+            nn->list(motions);
+    }
+
+    for (Motion *m : lastGoalMotion_) {
+        if (m != nullptr)
+            data.addGoalVertex(base::PlannerDataVertex(m->state));
+    }
+
+    for (auto &motion : motions)
+    {
+        if (motion->parent == nullptr)
+            data.addStartVertex(base::PlannerDataVertex(motion->state));
+        else
+            data.addEdge(base::PlannerDataVertex(motion->parent->state), base::PlannerDataVertex(motion->state));
+    }
+}
+
+void ompl::geometric::Partial::freeMemory()
+{
+    for (std::shared_ptr<NearestNeighbors<Motion *>> nn : nn_) {
+        if (nn) {
+            std::vector<Motion *> motions;
+            nn->list(motions);
+            for (auto &motion: motions) {
+                if (motion->state != nullptr)
+                    si_->freeState(motion->state);
+                delete motion;
+            }
+        }
+    }
+    // TODO also delete graphs
 }
 
 // save graph as png

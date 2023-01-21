@@ -45,7 +45,7 @@
 #include "ompl/base/World.h"
 
 const int NUM_OBJECTS = 4;
-const double SOLVE_TIME = 30;
+const double SOLVE_TIME = 5;
 
 namespace ob = ompl::base;
 namespace og = ompl::geometric;

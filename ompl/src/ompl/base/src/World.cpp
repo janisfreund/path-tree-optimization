@@ -5,6 +5,7 @@
 #include "ompl/base/World.h"
 
 ompl::base::World::World(int numObjects, bool changeableFinalStates) {
+    std::cout << "New world set." << std::endl;
     numObjects_ = numObjects;
 
     /// fill worldStates with all possible combinations
@@ -227,6 +228,12 @@ std::vector<int> ompl::base::World::getStateInt() {
     std::vector<int> intStates;
     for (ObjectState objectState : objectStates_) {
         intStates.push_back(static_cast<int>(objectState));
+    }
+    if (static_cast<int>(intStates.size()) == 0) {
+        std::cout << "Invalid state size!" << std::endl;
+        std::cout << "Returned size: " << static_cast<int>(intStates.size()) << "; real size: "
+            << static_cast<int>(objectStates_.size()) << "; num objects: " << numObjects_
+            << "; world states [0] size: " << static_cast<int>(worldStates_[0].size()) << std::endl;
     }
     return intStates;
 }
