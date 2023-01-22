@@ -389,7 +389,7 @@ class ompl_base_generator_t(code_generator_t):
         self.add_function_wrapper('bool()', \
             'PlannerTerminationConditionFn', 'Planner termination condition function')
         # TODO seperate function without world
-        self.add_function_wrapper('bool(const ompl::base::State*, ompl::base::World)', \
+        self.add_function_wrapper('bool(const ompl::base::State*, ompl::base::World*)', \
             'StateValidityCheckerFn', 'State validity checker function')
         self.add_function_wrapper('std::vector<int>(const ompl::base::State*)', \
             'TargetCheckerFn', 'Target checker function')

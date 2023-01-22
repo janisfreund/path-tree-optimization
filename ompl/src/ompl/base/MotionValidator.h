@@ -84,7 +84,7 @@ namespace ompl
                 \note This function updates the number of valid and invalid segments. */
             virtual bool checkMotion(const State *s1, const State *s2) const = 0;
 
-            virtual bool checkMotion(const State *s1, const State *s2, World world) const {
+            virtual bool checkMotion(const State *s1, const State *s2, World *world) const {
                 return false;
             }
 

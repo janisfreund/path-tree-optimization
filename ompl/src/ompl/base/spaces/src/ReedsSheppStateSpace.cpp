@@ -710,7 +710,7 @@ bool ompl::base::ReedsSheppMotionValidator::checkMotion(const State *s1, const S
     return result;
 }
 
-bool ompl::base::ReedsSheppMotionValidator::checkMotion(const State *s1, const State *s2, World world) const
+bool ompl::base::ReedsSheppMotionValidator::checkMotion(const State *s1, const State *s2, World *world) const
 {
     /* assume motion starts in a valid configuration so s1 is valid */
     if (!si_->isValid(s2, world))

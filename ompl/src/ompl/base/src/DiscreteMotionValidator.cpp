@@ -144,7 +144,7 @@ bool ompl::base::DiscreteMotionValidator::checkMotion(const State *s1, const Sta
     return result;
 }
 
-bool ompl::base::DiscreteMotionValidator::checkMotion(const State *s1, const State *s2, World world) const
+bool ompl::base::DiscreteMotionValidator::checkMotion(const State *s1, const State *s2, World *world) const
 {
 //    std::vector<std::vector<ObjectState>> worldStates = world.getWorldStates();
 //    for (int i = 0; i < static_cast<int>(worldStates.size()); i++) {

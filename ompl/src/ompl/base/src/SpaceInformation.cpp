@@ -106,19 +106,19 @@ void ompl::base::SpaceInformation::setStateValidityChecker(const StateValidityCh
     setStateValidityChecker(std::make_shared<FnStateValidityChecker>(this, svc));
 }
 
-void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc, ompl::base::World world)
+void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc, ompl::base::World *world)
 {
     class FnStateValidityAndTargetChecker : public StateValidityAndTargetChecker
     {
     public:
-        FnStateValidityAndTargetChecker(SpaceInformation *si, StateValidityWorldCheckerFn fn, TargetCheckerFn tc, World world)
+        FnStateValidityAndTargetChecker(SpaceInformation *si, StateValidityWorldCheckerFn fn, TargetCheckerFn tc, World *world)
                 : StateValidityAndTargetChecker(si), fn_(std::move(fn)), tc_(std::move(tc))
         {
             w_ = world;
         }
 
         //TODO not needed anymore
-        bool isValid(const State *state, ompl::base::World world) const override
+        bool isValid(const State *state, ompl::base::World *world) const override
         {
             return fn_(state, world);
         }
@@ -139,7 +139,7 @@ void ompl::base::SpaceInformation::setStateValidityAndTargetChecker(const StateV
     protected:
         StateValidityWorldCheckerFn fn_;
         TargetCheckerFn tc_;
-        ompl::base::World w_;
+        ompl::base::World *w_;
     };
 
     if (!svc || !tc)

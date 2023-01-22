@@ -182,7 +182,7 @@ namespace ompl
             }
 
             //partial
-            virtual bool isValid(const State *state, World world) const = 0;
+            virtual bool isValid(const State *state, World *world) const = 0;
             virtual bool isValid(const State *state) const = 0;
 
             virtual std::vector<int> targetFound(const State *state) const = 0;

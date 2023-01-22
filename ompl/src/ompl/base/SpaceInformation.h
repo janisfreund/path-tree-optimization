@@ -78,7 +78,7 @@ namespace ompl
         using StateValidityCheckerFn = std::function<bool(const State *)>;
 
         //partial
-        using StateValidityWorldCheckerFn = std::function<bool(const State *, World)>;
+        using StateValidityWorldCheckerFn = std::function<bool(const State *, World *)>;
         //change int to *cv::Mat
         using TargetCheckerFn = std::function<std::vector<int>(const State *)>;
 
@@ -112,7 +112,7 @@ namespace ompl
             }
 
             //partial
-            bool isValid(const State *state, World world) const
+            bool isValid(const State *state, World *world) const
             {
                 return stateValidityAndTargetChecker_->isValid(state, world);
             }
@@ -199,7 +199,7 @@ namespace ompl
                 since there is one more level of indirection */
             void setStateValidityChecker(const StateValidityCheckerFn &svc);
 
-            void setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc, World world);
+            void setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc, World *world);
 
             void initWorld(int numObjects, bool changeableFinalStates) {
                 world_ = new World(numObjects, changeableFinalStates);
@@ -412,7 +412,7 @@ namespace ompl
 
             virtual bool checkMotionWorlds(const State *s1, const State *s2) const
             {
-                return motionValidator_->checkMotion(s1, s2, *world_);
+                return motionValidator_->checkMotion(s1, s2, world_);
             }
 
             /** \brief Incrementally check if a sequence of states is valid. Given a vector of states, this routine only

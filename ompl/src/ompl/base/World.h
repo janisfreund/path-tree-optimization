@@ -94,12 +94,18 @@ namespace ompl
                 std::cout << "2nd setState called." << std::endl;
                 objectStates_ = worldStates_.at(idx);
                 if (static_cast<int>(objectStates_.size()) == 0) {
-                    std::cout << "Invalid state size!" << std::endl;
+                    std::cout << "Invalid state sizes set!" << std::endl;
                 }
                 std::cout << "States size: " << static_cast<int>(objectStates_.size()) << std::endl;
             }
 
             std::vector<ObjectState> getState() {
+                if (static_cast<int>(objectStates_.size()) == 0) {
+                    std::cout << "Invalid state size!" << std::endl;
+                    std::cout << "Real size: "
+                              << static_cast<int>(objectStates_.size()) << "; num objects: " << numObjects_
+                              << "; world states [0] size: " << static_cast<int>(worldStates_[0].size()) << std::endl;
+                }
                 return objectStates_;
             }
 
@@ -194,6 +200,8 @@ namespace ompl
                 std::cout << "]";
             }
 
+            std::vector<ObjectState> objectStates_;
+
         private:
             void generateCombinations(std::vector<ObjectState> combination, int len, int index);
 
@@ -205,7 +213,6 @@ namespace ompl
             std::vector<float> calcBelief(std::vector<float> oldBeliefs, std::vector<int> observableObjects, std::vector<ObjectState> states);
 
             int numObjects_;
-            std::vector<ObjectState> objectStates_;
             std::vector<std::vector<ObjectState>> worldStates_;
             std::vector<BeliefState> beliefStates_;
         };

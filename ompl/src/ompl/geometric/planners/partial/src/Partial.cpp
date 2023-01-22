@@ -168,7 +168,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
 
         // Check if sampled state is valid in sampled world
-        if (!si_->isValid(rstate, *world)) {
+        if (!si_->isValid(rstate, world)) {
             continue;
             std::cout << "Sampled state is not valid in sampled world!" << std::endl;
         }

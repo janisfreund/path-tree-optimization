@@ -53,7 +53,7 @@ namespace og = ompl::geometric;
 class RigidBodyPlanning {
 public:
 
-    static bool isStateValid(const ob::State *state, ob::World world) {
+    static bool isStateValid(const ob::State *state, ob::World *world) {
         const auto *state3D =
                 state->as<ob::RealVectorStateSpace::StateType>();
         double x = state3D->values[0];
@@ -65,7 +65,7 @@ public:
         // no bounds checking necessary because no states outside the bounds can be sampled
 
         // check collision with environment, in this toy example only check collision with POObjects
-        std::vector<ob::ObjectState> worldState = world.getState();
+        std::vector<ob::ObjectState> worldState = world->getState();
 
         int i = 0;
         for (ob::ObjectState objectState: worldState) {
@@ -141,7 +141,7 @@ public:
 
         si->initWorld(NUM_OBJECTS, true);
 
-        si->setStateValidityAndTargetChecker(isStateValid, targetFound, *si->getWorld());
+        si->setStateValidityAndTargetChecker(isStateValid, targetFound, si->getWorld());
 
         // create POObjects based on NUM_OBJECTS
         for (int i = 0; i < NUM_OBJECTS; i++) {
@@ -213,9 +213,9 @@ public:
 
         if (solved) {
             // simplify path
-            ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si, pdef->getGoal(), pdef->getOptimizationObjective());
-            const ompl::base::PathPtr &p = pdef->getSolutionPath();
-            psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*p), 20);
+//            ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si, pdef->getGoal(), pdef->getOptimizationObjective());
+//            const ompl::base::PathPtr &p = pdef->getSolutionPath();
+//            psk.simplify(static_cast<ompl::geometric::PathGeometric &>(*p), 20);
 
             // get the goal representation from the problem definition (not the same as the goal state)
             // and inquire about the found path
