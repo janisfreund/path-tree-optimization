@@ -738,7 +738,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         for (std::vector<base::ObjectState> w : world->getWorldStates()) {
             std::cout << c << ": ";
             world->printStateFromInt(world->getStateIntFromObjectState(w));
-            std::cout << std::endl;
+            std::cout << "\n";
             c++;
         }
         // return solution path

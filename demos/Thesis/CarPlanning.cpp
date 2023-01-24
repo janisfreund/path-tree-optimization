@@ -62,7 +62,7 @@ bool isStateValidHard(const ob::SpaceInformation *si, const ob::State *state)
     return si->satisfiesBounds(state);
 }
 
-static bool isStateValidWorld(const ob::State *state, ob::World world) {
+static bool isStateValidWorld(const ob::State *state, ob::World *world) {
     return true;
 }
 
@@ -105,7 +105,7 @@ void plan(const ob::StateSpacePtr& space, bool easy)
     // 4 parking spaces
     si_->initWorld(4, true);
 
-    ss.setStateValidityAndTargetChecker(isStateValidWorld, targetFound, *si_->getWorld());
+    ss.setStateValidityAndTargetChecker(isStateValidWorld, targetFound, si_->getWorld());
 
     // set the start and goal states
     if (easy)

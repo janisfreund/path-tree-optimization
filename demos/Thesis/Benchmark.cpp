@@ -22,7 +22,7 @@ namespace og = ompl::geometric;
 class RigidBodyPlanning {
 public:
 
-    static bool isStateValid(const ob::State *state, ob::World world) {
+    static bool isStateValid(const ob::State *state, ob::World *world) {
         const auto *state3D =
                 state->as<ob::RealVectorStateSpace::StateType>();
         double x = state3D->values[0];
@@ -34,7 +34,7 @@ public:
         // no bounds checking necessary because no states outside the bounds can be sampled
 
         // check collision with environment, in this toy example only check collision with POObjects
-        std::vector<ob::ObjectState> worldState = world.getState();
+        std::vector<ob::ObjectState> worldState = world->getState();
 
         int i = 0;
         for (ob::ObjectState objectState: worldState) {
@@ -113,7 +113,7 @@ public:
         si->initWorld(NUM_OBJECTS, true);
 
 //        si->setStateValidityAndTargetChecker(isStateValid, targetFound, *si->getWorld());
-        ss_->setStateValidityAndTargetChecker(isStateValid, targetFound, *si->getWorld());
+        ss_->setStateValidityAndTargetChecker(isStateValid, targetFound, si->getWorld());
 
         // create POObjects based on NUM_OBJECTS
         for (int i = 0; i < NUM_OBJECTS; i++) {
