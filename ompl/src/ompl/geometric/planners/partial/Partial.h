@@ -16,7 +16,7 @@
 #include <boost/config.hpp>
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
-//#include <boost/graph/graphviz.hpp>
+#include <boost/graph/graphviz.hpp>
 #include <chrono>
 
 namespace ompl
@@ -67,6 +67,8 @@ namespace ompl
                 pathTree.clear();
                 pathTreeFinalStates.clear();
                 completeGraphMap.clear();
+                debugGraph.clear();
+                costs.clear();
             }
 
             void setPathOptimization(bool b)
@@ -131,6 +133,7 @@ namespace ompl
                 bool isWorldConnection;
                 std::string color;
                 std::vector<int> worldValidities;
+                std::string label;
             };
 
             typedef boost::adjacency_list< boost::listS, boost::vecS, boost::undirectedS, VertexStruct, EdgeStruct > Graph;
@@ -141,7 +144,7 @@ namespace ompl
             typedef boost::graph_traits<GraphD>::vertex_descriptor VertexTraitD;
             typedef boost::graph_traits<GraphD>::edge_descriptor EdgeTraitD;
 
-            void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited);
+            void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited, VertexTrait d_v);
 
             void getPlannerData(base::PlannerData &data) const override;
 
@@ -170,6 +173,8 @@ namespace ompl
             GraphD pathTree;
             std::vector<VertexTraitD> pathTreeFinalStates;
             std::map<int, int> completeGraphMap;
+            std::vector<double> costs;
+            GraphD debugGraph;
         };
     }
 }
