@@ -342,7 +342,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::chrono::steady_clock::time_point t_sampling_end = std::chrono::steady_clock::now();
     timeSampling = (std::chrono::duration_cast<std::chrono::milliseconds>(t_sampling_end - t_sampling_start).count()) / 1000.0;
-    saveGraph(randomGraph, "random", false, true);
+    if (extendedOutput) {
+        saveGraph(randomGraph, "random", false, true);
+    }
 
     std::chrono::steady_clock::time_point t_belief_start = std::chrono::steady_clock::now();
 
@@ -527,7 +529,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                                 EdgeTrait e = p.first;
                                 beliefGraph[e].isWorldConnection = true;
                                 beliefGraph[e].color = "red";
-                                beliefGraph[beliefGraphVertices[beliefIdx].at(nodeIdx)].beliefChildren.push_back(beliefGraphVertices[newBeliefIdx].at(nodeIdx));
+                                // TODO seems to be wrong
+                                //beliefGraph[beliefGraphVertices[beliefIdx].at(nodeIdx)].beliefChildren.push_back(beliefGraphVertices[newBeliefIdx].at(nodeIdx));
+                                beliefGraph[v].beliefChildren.push_back(graphMap[newBeliefIdx].find(graphMapReverse[beliefIdx].find(v)->second)->second);
                                 //createdConnections.insert(newBeliefIdx);
                             //}
                         //}
@@ -540,8 +544,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::chrono::steady_clock::time_point t_belief_end = std::chrono::steady_clock::now();
     timeBeliefGraph = (std::chrono::duration_cast<std::chrono::milliseconds>(t_belief_end - t_belief_start).count()) / 1000.0;
-    saveGraph(beliefGraph, "belief", true, true);
     if (extendedOutput) {
+        saveGraph(beliefGraph, "belief", true, true);
         saveGraph(beliefGraph, "belief_no_pos", true, false);
     }
 
@@ -568,6 +572,14 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             costs.push_back(std::numeric_limits<double>::infinity());
         }
     }
+
+    std::cout << "Adjacent nodes from start state: ";
+    Graph::adjacency_iterator it, end;
+    std::tie(it, end) = boost::adjacent_vertices(0, beliefGraph);
+    for (; it != end; it++) {
+        std::cout << it.dereference() << std::endl;
+    }
+    std::cout << std::endl;
 
     while (!pq.empty())
     {
@@ -667,7 +679,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     debugGraph[d].state = beliefGraph[currVertex].state;
     debugGraph[d].fontcolor = beliefGraph[currVertex].fontcolor;
     debugGraph[d].color = beliefGraph[currVertex].color;
-    debugGraph[d].label = std::to_string(std::round(costs[currVertex] * 100) / 100).substr(0, 4);
+    debugGraph[d].label = std::to_string(currVertex) + "\n" + std::to_string(std::round(costs[currVertex] * 100) / 100).substr(0, 4);
     debugGraph[d].pos = beliefGraph[currVertex].pos;
 
     constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{}, d);
@@ -675,9 +687,11 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
     timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
     saveGraph(pathTree, "path", true, true);
-    saveGraph(pathTree, "path_no_pos", true, false);
-    saveGraph(debugGraph, "debug", true, false);
-    saveGraph(debugGraph, "debug_pos", true, true);
+    if (extendedOutput) {
+        saveGraph(pathTree, "path_no_pos", true, false);
+        saveGraph(debugGraph, "debug", true, false);
+        saveGraph(debugGraph, "debug_pos", true, true);
+    }
 
     // When a solution path is computed, save it here
     std::vector<int> worldsSolved;
@@ -1001,7 +1015,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                             debugGraph[d].state = pathTree[w].state;
                             debugGraph[d].fontcolor = pathTree[w].fontcolor;
                             debugGraph[d].color = pathTree[w].color;
-                            debugGraph[d].label = std::to_string(std::round(costs[it.dereference()] * 100) / 100).substr(0, 4);
+                            debugGraph[d].label = std::to_string(it.dereference()) + "\n" + std::to_string(std::round(costs[it.dereference()] * 100) / 100).substr(0, 4);
                             debugGraph[d].pos = pathTree[w].pos;
 
                             std::pair<EdgeTraitD, bool> d_p = add_edge(d_v, d, debugGraph);
@@ -1046,7 +1060,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         debugGraph[d].state = pathTree[u].state;
         debugGraph[d].fontcolor = pathTree[u].fontcolor;
         debugGraph[d].color = pathTree[u].color;
-        debugGraph[d].label = std::to_string(std::round(costs[bestVertex] * 100) / 100).substr(0, 4);
+        debugGraph[d].label = std::to_string(bestVertex) + "\n" + std::to_string(std::round(costs[bestVertex] * 100) / 100).substr(0, 4);
         debugGraph[d].pos = pathTree[u].pos;
 
         std::pair<EdgeTraitD, bool> d_p = add_edge(d_v, d, debugGraph);
@@ -1055,19 +1069,20 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         debugGraph[d_e].color = "blue";
 
         // add all adjacent vertices to debug_graph
-        std::tie(it, end) = boost::adjacent_vertices(bestVertex, beliefGraph);
-        for (; it != end; it++) {
-            if (it.dereference() != currVertex && it.dereference() != bestVertex) {
+        Graph::adjacency_iterator it_, end_;
+        std::tie(it_, end_) = boost::adjacent_vertices(currVertex, beliefGraph);
+        for (; it_ != end_; it_++) {
+            if (it_.dereference() != bestVertex && /*not correct*/ visited.find(it_.dereference()) == visited.end()) {
                 VertexTrait d_n = add_vertex(debugGraph);
-                debugGraph[d_n].state = beliefGraph[it.dereference()].state;
-                debugGraph[d_n].fontcolor = beliefGraph[it.dereference()].fontcolor;
-                debugGraph[d_n].color = beliefGraph[it.dereference()].color;
-                debugGraph[d_n].label = std::to_string(std::round(costs[it.dereference()] * 100) / 100).substr(0, 4);
-                debugGraph[d_n].pos = beliefGraph[it.dereference()].pos;
+                debugGraph[d_n].state = beliefGraph[it_.dereference()].state;
+                debugGraph[d_n].fontcolor = beliefGraph[it_.dereference()].fontcolor;
+                debugGraph[d_n].color = beliefGraph[it_.dereference()].color;
+                debugGraph[d_n].label = std::to_string(it_.dereference()) + "\n" + std::to_string(std::round(costs[it_.dereference()] * 100) / 100).substr(0, 4);
+                debugGraph[d_n].pos = beliefGraph[it_.dereference()].pos;
 
                 double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
-                if (boost::edge(bestVertex, it.dereference(), beliefGraph).second && beliefGraph[boost::edge(bestVertex, it.dereference(), beliefGraph).first].isWorldConnection) {
-                    if (std::find(beliefGraph[bestVertex].beliefChildren.begin(), beliefGraph[bestVertex].beliefChildren.end(), it.dereference()) != beliefGraph[bestVertex].beliefChildren.end()) {
+                if (boost::edge(currVertex, it_.dereference(), beliefGraph).second && beliefGraph[boost::edge(currVertex, it_.dereference(), beliefGraph).first].isWorldConnection) {
+                    if (std::find(beliefGraph[currVertex].beliefChildren.begin(), beliefGraph[currVertex].beliefChildren.end(), it_.dereference()) != beliefGraph[currVertex].beliefChildren.end()) {
                         std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
                         EdgeTraitD d_e_n = d_p_n.first;
                         debugGraph[d_e_n].color = "red";
