@@ -162,8 +162,8 @@ namespace ompl
 
             /** \brief The fraction of time the goal is picked as the state to expand towards (if such a state is
              * available) */
-//            double goalBias_{.05};
-            double goalBias_{.2};
+            double goalBias_{.05};
+//            double goalBias_{.2};
 
             /** \brief The random number generator */
             RNG rng_;
