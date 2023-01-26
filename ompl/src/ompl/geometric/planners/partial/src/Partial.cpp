@@ -618,7 +618,15 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 else {
                     newCost = 0;
                     for (int nodeIdx : children) {
-                        newCost += world->calcBranchingProbabilitiy(beliefGraph[parent].beliefState, beliefGraph[nodeIdx].beliefState) * costs[nodeIdx];
+                        if (costs[nodeIdx] == std::numeric_limits<double>::infinity()) {
+                            newCost = std::numeric_limits<double>::infinity();
+                            break;
+                        }
+                        else {
+                            newCost += world->calcBranchingProbabilitiy(beliefGraph[parent].beliefState,
+                                                                        beliefGraph[nodeIdx].beliefState) *
+                                       costs[nodeIdx];
+                        }
                     }
                 }
             }
@@ -999,8 +1007,9 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                             std::pair<EdgeTraitD, bool> d_p = add_edge(d_v, d, debugGraph);
                             EdgeTraitD d_e = d_p.first;
                             debugGraph[d_e].color = "red";
+                            debugGraph[d_e].label = std::to_string(std::round(si_->getStateSpace()->distanceBase(debugGraph[d_v].state, debugGraph[d].state, 2) * 100) / 100).substr(0, 4);
 
-                            visited.insert(currVertex);
+                        visited.insert(currVertex);
                             if (pathTree[w].fontcolor != "blue") {
                                 constructPathTree(beliefGraph, costs, w, it.dereference(), visited, d);
                             }
@@ -1043,6 +1052,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         std::pair<EdgeTraitD, bool> d_p = add_edge(d_v, d, debugGraph);
         EdgeTraitD d_e = d_p.first;
         debugGraph[d_e].label = std::to_string(std::round(si_->getStateSpace()->distanceBase(debugGraph[d_v].state, debugGraph[d].state, 2) * 100) / 100).substr(0, 4);
+        debugGraph[d_e].color = "blue";
 
         // add all adjacent vertices to debug_graph
         std::tie(it, end) = boost::adjacent_vertices(bestVertex, beliefGraph);
@@ -1055,13 +1065,24 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                 debugGraph[d_n].label = std::to_string(std::round(costs[it.dereference()] * 100) / 100).substr(0, 4);
                 debugGraph[d_n].pos = beliefGraph[it.dereference()].pos;
 
-                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
-                EdgeTraitD d_e_n = d_p_n.first;
                 double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
-                if (dis == 0) {
-                    debugGraph[d_e_n].color = "red";
+                if (boost::edge(bestVertex, it.dereference(), beliefGraph).second && beliefGraph[boost::edge(bestVertex, it.dereference(), beliefGraph).first].isWorldConnection) {
+                    if (std::find(beliefGraph[bestVertex].beliefChildren.begin(), beliefGraph[bestVertex].beliefChildren.end(), it.dereference()) != beliefGraph[bestVertex].beliefChildren.end()) {
+                        std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+                        EdgeTraitD d_e_n = d_p_n.first;
+                        debugGraph[d_e_n].color = "red";
+                        debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+                    } else {
+                        std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, debugGraph);
+                        EdgeTraitD d_e_n = d_p_n.first;
+                        debugGraph[d_e_n].color = "red";
+                        debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+                    }
+
                 }
                 else {
+                    std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+                    EdgeTraitD d_e_n = d_p_n.first;
                     debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
                 }
             }
