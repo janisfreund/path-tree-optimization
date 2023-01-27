@@ -406,9 +406,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
                 // check if final random graph node is also final in belief
                 if (beliefGraph[v].fontcolor == "blue") {
-                    // assume dims = 3 -> car
-                    if (si_->getStateDimension() == 3) {
-                    } else {
+                    if (pdef_->getMode() == 1) {
                         if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3)) {
                             beliefGraph[v].fontcolor = "";
                             std::cout << "No final state: State " << v << " (" << node << ") with belief ";
@@ -530,8 +528,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                                 EdgeTrait e = p.first;
                                 beliefGraph[e].isWorldConnection = true;
                                 beliefGraph[e].color = "red";
-                                // TODO seems to be wrong
-                                //beliefGraph[beliefGraphVertices[beliefIdx].at(nodeIdx)].beliefChildren.push_back(beliefGraphVertices[newBeliefIdx].at(nodeIdx));
                                 beliefGraph[v].beliefChildren.push_back(graphMap[newBeliefIdx].find(graphMapReverse[beliefIdx].find(v)->second)->second);
                                 //createdConnections.insert(newBeliefIdx);
                             //}
@@ -648,8 +644,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                         newCost = std::numeric_limits<double>::infinity();
                     } else {
                         if (infCount != 0) {
-                            // TODO should be set via pdef
-                            if (false) {
+                            if (pdef_->getMode() == 2) {
                                 double multiplier = 1 / (1 - infCount);
                                 newCost *= multiplier;
                             } else {
@@ -703,11 +698,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
     timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
-    saveGraph(pathTree, "path", true, true);
-    saveGraph(debugGraph, "debug", true, false);
     if (extendedOutput) {
-        saveGraph(pathTree, "path_no_pos", true, false);
+        saveGraph(pathTree, "path", true, true);
         saveGraph(debugGraph, "debug", true, false);
+        saveGraph(pathTree, "path_no_pos", true, false);
         saveGraph(debugGraph, "debug_pos", true, true);
     }
 
@@ -807,6 +801,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         // return solution path
         for (VertexTraitD v : pathTreeFinalStates) {
             pWorlds.push_back(world->beliefToWorld(pathTree[v].beliefState));
+            pdef_->addSolutionIdx(world->getBeliefIdx(pathTree[v].beliefState));
             double dis = 0;
             std::vector<int> observationIdx;
             int planIdx = pathTree[v].finalSateIdx;

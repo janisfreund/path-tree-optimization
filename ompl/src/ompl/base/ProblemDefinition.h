@@ -454,6 +454,22 @@ namespace ompl
                 return vec;
             }
 
+            void setMode(int m) {
+                mode = m;
+            }
+
+            int getMode() {
+                return mode;
+            }
+
+            void addSolutionIdx(int idx) {
+                solutionIdx.push_back(idx);
+            }
+
+            std::vector<int> getSolutionIdx() {
+                return solutionIdx;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -485,10 +501,13 @@ namespace ompl
             PlannerSolutionSetPtr solutions_;
 
             std::vector<State *> goalStates;
+            // 0 -> fixed goal; 1 -> multiple goals + #PoObjects=#worldStates; 2 -> multiple goals + all world states
+            int mode;
 
             std::vector<std::vector<float>> pWorlds;
             std::vector<std::vector<State *>> solutionsRaw;
             std::vector<std::pair<State *, std::vector<int>>> observationPoints;
+            std::vector<int> solutionIdx;
         };
     }
 }
