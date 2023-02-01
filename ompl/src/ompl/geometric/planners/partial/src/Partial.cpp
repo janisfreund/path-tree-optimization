@@ -115,6 +115,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     double dist = 0.0;
 
     int randomGraphIdx = 1;
+    int sampledIdx = 1;
 
     // periodically check if ptc() returns true.
     // if it does, terminate planning.
@@ -122,7 +123,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     while (!ptc()) {
         // Sample world
         int sampledWorldIdx;
-        if (randomGraphIdx <= world->getNumWorldStates()) {
+        if (sampledIdx <= world->getNumWorldStates()) {
             sampledWorldIdx = randomGraphIdx - 1;
         }
         else {
@@ -151,8 +152,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         // Sample a new state uniformly or sample the goal
         std::cout << "New state sampled.\n";
         double rValue = rng_.uniform01();
-        if (randomGraphIdx <= world->getNumWorldStates()) {
+        if (sampledIdx <= world->getNumWorldStates()) {
             sampler_->sampleGoodCameraPositionNear(rstate, pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[0], pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[1]);
+            sampledIdx++;
         }
         else if ((goal_s != nullptr) && rValue < goalBias_ && goal_s->canSample()) {
             goal_s->sampleGoal(rstate);
@@ -205,7 +207,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
             // find the states in the tree within radius
             std::vector<Motion*> nmotionVec;
-            nn_.at(worldIdx)->nearestR(rmotion, 0.5, nmotionVec);
+            // TODO no fixed radius
+            nn_.at(worldIdx)->nearestR(rmotion, 3, nmotionVec);
 
             // buggy -> use only nearest
 //            nn_.at(worldIdx)->nearestK(rmotion, 3, nmotionVec);

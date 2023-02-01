@@ -524,8 +524,7 @@ void ompl::base::ProblemDefinition::setSolutionNonExistenceProof(
 void ompl::base::ProblemDefinition::addGoalState(std::vector<double> goalState) {
     State *goal = si_->allocState();
 
-    // assume 3 dims = car TODO change
-    if (static_cast<int>(goalState.size()) == 3) {
+    if (mode == 2) {
         goal->as<base::ReedsSheppStateSpace::StateType>()->setX(goalState[0]);
         goal->as<base::ReedsSheppStateSpace::StateType>()->setY(goalState[1]);
         goal->as<base::ReedsSheppStateSpace::StateType>()->setYaw(goalState[2]);
