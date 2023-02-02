@@ -208,7 +208,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             // find the states in the tree within radius
             std::vector<Motion*> nmotionVec;
             // TODO no fixed radius
-            nn_.at(worldIdx)->nearestR(rmotion, 3, nmotionVec);
+            nn_.at(worldIdx)->nearestR(rmotion, 0.5, nmotionVec);
 
             // buggy -> use only nearest
 //            nn_.at(worldIdx)->nearestK(rmotion, 3, nmotionVec);
@@ -320,6 +320,16 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //                    }
                 }
             }
+
+//            if (!motionAdded && si_->isValid(dstate, world)) {
+//                // add motion to nn
+//                auto *motion = new Motion(si_);
+//                si_->copyState(motion->state, dstate);
+//                motion->parent = NULL;
+//                motion->nodeIdx = randomGraphIdx;
+//                motion->isGoal = goal->isSatisfied(dstate, &dist);
+//                nn_.at(worldIdx)->add(motion);
+//            }
 
 //            if (motionAdded && goal->isSatisfied(dstate, &dist)) {
 //                randomGraph[randomGraphIdx].isFinal[worldIdx] = true;
