@@ -22,7 +22,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // make sure the planner is configured correctly; ompl::base::Planner::checkValidity
     // ensures that there is at least one input state and a ompl::base::Goal object specified
     std::cout << "Started solving process using planner Partial.\n";
-    std::cout << "Using newest version\n";
 
     ompl::base::World *world = si_->getWorld();
     int numWorldStates = world->getNumWorldStates();
@@ -59,6 +58,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // Ensure that we have a state sampler
     if (!sampler_)
         sampler_ = si_->allocStateSampler();
+
+    if (pdef_->getSeed() != -1) {
+        int seed = pdef_->getSeed();
+        rng_.setLocalSeed(seed);
+        sampler_->setSeed(seed);
+        std::cout << "Using seed " << seed << std::endl;
+    }
 
     std::vector<std::string> colors = {"aquamarine", "blue", "coral", "cyan", "darkred", "gold", "lime", "webpurple"};
 
@@ -1199,48 +1205,48 @@ void ompl::geometric::Partial::freeMemory()
 
 // save graph as png
 void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-        dp_no_pos.property("label", get(&EdgeStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    dp_no_pos.property("splines", boost::make_constant_property<Graph*>(true));
-    dp_no_pos.property("overlap", boost::make_constant_property<Graph*>(false));
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//        dp_no_pos.property("label", get(&EdgeStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    dp_no_pos.property("splines", boost::make_constant_property<Graph*>(true));
+//    dp_no_pos.property("overlap", boost::make_constant_property<Graph*>(false));
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-        dp_no_pos.property("label", get(&EdgeStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    dp_no_pos.property("splines", boost::make_constant_property<GraphD*>(true));
-    dp_no_pos.property("overlap", boost::make_constant_property<GraphD*>(false));
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//        dp_no_pos.property("label", get(&EdgeStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    dp_no_pos.property("splines", boost::make_constant_property<GraphD*>(true));
+//    dp_no_pos.property("overlap", boost::make_constant_property<GraphD*>(false));
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 

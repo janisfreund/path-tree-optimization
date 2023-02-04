@@ -110,6 +110,10 @@ namespace ompl
                 sampleUniform(state);
             }
 
+            void setSeed(int seed) {
+                rng_.setLocalSeed(seed);
+            }
+
         protected:
             /** \brief The state space this sampler samples */
             const StateSpace *space_;

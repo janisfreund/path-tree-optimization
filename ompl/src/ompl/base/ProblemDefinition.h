@@ -470,6 +470,14 @@ namespace ompl
                 return solutionIdx;
             }
 
+            void setSeed(int s) {
+                seed = s;
+            }
+
+            int getSeed() {
+                return seed;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -503,6 +511,7 @@ namespace ompl
             std::vector<State *> goalStates;
             // 0 -> fixed goal; 1 -> multiple goals + #PoObjects=#worldStates; 2 -> multiple goals + all world states
             int mode;
+            int seed = -1;
 
             std::vector<std::vector<float>> pWorlds;
             std::vector<std::vector<State *>> solutionsRaw;
