@@ -64,8 +64,8 @@ ompl::geometric::PathSimplifier::PathSimplifier(base::SpaceInformationPtr si, co
     {
         obj_ = std::make_shared<base::PathLengthOptimizationObjective>(si_);
     }
-    rng_.setSeed(0);
-    rng_.setLocalSeed(0);
+//    rng_.setSeed(0);
+    rng_.setLocalSeed(42);
 }
 
 bool ompl::geometric::PathSimplifier::freeStates() const

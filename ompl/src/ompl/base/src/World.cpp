@@ -35,6 +35,7 @@ ompl::base::World::World(int numObjects, bool changeableFinalStates) {
         initialObjects.push_back(i);
     }
     beliefStates_.push_back(initialBelief);
+    beliefStateProbabilities.push_back(1.);
 
     calcReachableBeliefStates(initialBelief, initialObjects);
 
@@ -141,6 +142,9 @@ void ompl::base::World::calcReachableBeliefStates(std::vector<float> initialBeli
 //            }
             // add belief if it is not final
             beliefStates_.push_back(belief);
+            double old_prob = beliefStateProbabilities[getBeliefIdx(initialBeliefSate)];
+            double branching_prob = calcBranchingProbabilitiy(initialBeliefSate, belief);
+            beliefStateProbabilities.push_back(old_prob * branching_prob);
             // recursively call function with remaining objects
             std::vector<int> remainingObjects = undiscoveredObjects;
             for (std::vector<int>::iterator it = remainingObjects.begin(); it != remainingObjects.end(); ++it) {

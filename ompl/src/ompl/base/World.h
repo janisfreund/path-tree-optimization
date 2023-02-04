@@ -140,6 +140,10 @@ namespace ompl
                 return beliefStates_;
             }
 
+            double getBeliefStateProbability(int idx) {
+                return beliefStateProbabilities[idx];
+            }
+
             bool beliefChanged(std::vector<float> oldBeliefs, int observableObject) {
                 if(!calcBelief(oldBeliefs, std::vector<int>{observableObject}, std::vector<ObjectState>{ObjectState(0)}).empty()) {
                     return true;
@@ -215,6 +219,7 @@ namespace ompl
             int numObjects_;
             std::vector<std::vector<ObjectState>> worldStates_;
             std::vector<BeliefState> beliefStates_;
+            std::vector<double> beliefStateProbabilities;
         };
     }
 }
