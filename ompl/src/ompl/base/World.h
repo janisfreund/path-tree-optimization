@@ -91,12 +91,12 @@ namespace ompl
 //            }
 
             void setState(int idx) {
-                std::cout << "2nd setState called." << std::endl;
+//                std::cout << "2nd setState called." << std::endl;
                 objectStates_ = worldStates_.at(idx);
                 if (static_cast<int>(objectStates_.size()) == 0) {
                     std::cout << "Invalid state sizes set!" << std::endl;
                 }
-                std::cout << "States size: " << static_cast<int>(objectStates_.size()) << std::endl;
+//                std::cout << "States size: " << static_cast<int>(objectStates_.size()) << std::endl;
             }
 
             std::vector<ObjectState> getState() {

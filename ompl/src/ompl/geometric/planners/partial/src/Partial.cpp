@@ -156,7 +156,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         auto *goal_s = dynamic_cast<ompl::base::GoalSampleableRegion *>(goal);
 
         // Sample a new state uniformly or sample the goal
-        std::cout << "New state sampled.\n";
+//        std::cout << "New state sampled.\n";
         double rValue = rng_.uniform01();
         if (sampledIdx <= world->getNumWorldStates()) {
             sampler_->sampleGoodCameraPositionNear(rstate, pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[0], pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[1]);
@@ -164,7 +164,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
         else if ((goal_s != nullptr) && rValue < goalBias_ && goal_s->canSample()) {
             goal_s->sampleGoal(rstate);
-            std::cout << "Goal state sampled.\n";
+//            std::cout << "Goal state sampled.\n";
         }
         else if (rValue < (goalBias_ + 0.2)) {
             sampler_->sampleUniform(rstate);
@@ -176,7 +176,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         // Check if sampled state is valid in sampled world
         if (!si_->isValid(rstate, world)) {
             continue;
-            std::cout << "Sampled state is not valid in sampled world!" << std::endl;
+//            std::cout << "Sampled state is not valid in sampled world!" << std::endl;
         }
 
         base::State *dstate = rstate;
@@ -190,11 +190,19 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
         randomGraph[v].pos = pos_str;
 
+        std::cout << "Sampled state: " << pos_str << std::endl;
+
         // check which objects are visible from sampled state
         // TODO currently using camera image taken in a world in which all objects are present
         world->setState(world->getNumWorldStates() - 1);
 
         randomGraph[v].observableObjects = si_->targetFound(dstate);
+
+        std::cout << "Observable objects: [";
+        for (int obsIdx : randomGraph[v].observableObjects) {
+            std::cout << obsIdx << " ";
+        }
+        std::cout << "]" << std::endl;
 
 //        randomGraph[v].isFinal = std::vector<bool>(numWorldStates);
 
@@ -209,7 +217,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         for (int worldIdx = 0; worldIdx < numWorldStates; worldIdx++) {
             // set world state
             world->setState(worldIdx);
-            std::cout << "New world set." << std::endl;
+//            std::cout << "New world set." << std::endl;
 
             // find the states in the tree within radius
             std::vector<Motion*> nmotionVec;
@@ -225,12 +233,12 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 nmotionVec.push_back(nn_.at(worldIdx)->nearest(rmotion));
             }
 
-            std::cout << "#nearest: " << static_cast<int>(nmotionVec.size()) << std::endl;
+//            std::cout << "#nearest: " << static_cast<int>(nmotionVec.size()) << std::endl;
 
             // iterate over all nearest motions
             bool motionAdded = false;
             for (Motion *nmotion : nmotionVec) {
-                std::cout << "Nearest motion from " << randomGraphIdx << ": " << nmotion->nodeIdx << std::endl;
+//                std::cout << "Nearest motion from " << randomGraphIdx << ": " << nmotion->nodeIdx << std::endl;
                 // check if motion is valid
                 std::chrono::steady_clock::time_point t_checkM_start = std::chrono::steady_clock::now();
                 bool validMotion = si_->checkMotionWorlds(nmotion->state, dstate);
@@ -261,14 +269,14 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                             randomGraphEdges.push_back(e);
                             parentNodes.insert(motion->parent->nodeIdx);
 
-                            std::cout << "New edge added to random graph from " << e.m_source << " to " << e.m_target
-                                      << std::endl;
+//                            std::cout << "New edge added to random graph from " << e.m_source << " to " << e.m_target
+//                                      << std::endl;
                             std::vector<int> vals = randomGraph[e].worldValidities;
-                            std::cout << "Current world validities: ";
-                            for (int val: vals) {
-                                std::cout << val << ", ";
-                            }
-                            std::cout << std::endl << std::endl;
+//                            std::cout << "Current world validities: ";
+//                            for (int val: vals) {
+//                                std::cout << val << ", ";
+//                            }
+//                            std::cout << std::endl << std::endl;
 
                         } else {
                             int edgeIdx = 0;
@@ -282,15 +290,15 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                             }
                             randomGraph[randomGraphEdges.at(edgeIdx)].worldValidities.push_back(worldIdx);
 
-                            std::cout << "Random graph edge from " << randomGraphEdges.at(edgeIdx).m_source << " to "
-                                      << randomGraphEdges.at(edgeIdx).m_target << " modified; " << worldIdx << " added"
-                                      << std::endl;
+//                            std::cout << "Random graph edge from " << randomGraphEdges.at(edgeIdx).m_source << " to "
+//                                      << randomGraphEdges.at(edgeIdx).m_target << " modified; " << worldIdx << " added"
+//                                      << std::endl;
                             std::vector<int> vals = randomGraph[randomGraphEdges.at(edgeIdx)].worldValidities;
-                            std::cout << "Current world validities: ";
-                            for (int val: vals) {
-                                std::cout << val << ", ";
-                            }
-                            std::cout << std::endl << std::endl;
+//                            std::cout << "Current world validities: ";
+//                            for (int val: vals) {
+//                                std::cout << val << ", ";
+//                            }
+//                            std::cout << std::endl << std::endl;
                         }
                     }
 
@@ -411,10 +419,10 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 //        std::cout << "Added to RandomGraph: [" << state3D->values[0] << ", "
 //                  << state3D->values[1] << ", " << state3D->values[2] << "]" << std::endl;
 
-        std::cout << "Node Idx: " << nodesCount << std::endl;
+//        std::cout << "Node Idx: " << nodesCount << std::endl;
         int idx = 0;
         for (base::BeliefState b : beliefStates) {
-            std::cout << "Belief Idx: " << idx << std::endl;
+//            std::cout << "Belief Idx: " << idx << std::endl;
             if (activeNodes[idx][node]) {
                 VertexTrait v = add_vertex(beliefGraph);
                 beliefGraph[v].state = randomGraph[node].state;
@@ -530,16 +538,16 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             VertexTrait v = beliefGraphVertices[beliefIdx].at(nodeIdx);
             for (int objectIdx : beliefGraph[v].observableObjects) {
                 std::vector<base::BeliefState> newBeliefs = world->observe(beliefGraph[v].beliefState, objectIdx);
-                std::cout << "From belief " << world->getBeliefIdx(beliefGraph[v].beliefState) << " (";
-                world->printBelief(beliefGraph[v].beliefState);
-                std::cout << ") to belief ";
+//                std::cout << "From belief " << world->getBeliefIdx(beliefGraph[v].beliefState) << " (";
+//                world->printBelief(beliefGraph[v].beliefState);
+//                std::cout << ") to belief ";
                 // add edges if beliefs change
                 if (static_cast<int>(newBeliefs.size()) != 1) {
                     for (base::BeliefState belief : newBeliefs) {
                         int newBeliefIdx = world->getBeliefIdx(belief);
-                        std::cout << newBeliefIdx << " (";
-                        world->printBelief(belief);
-                        std::cout << ") ,";
+//                        std::cout << newBeliefIdx << " (";
+//                        world->printBelief(belief);
+//                        std::cout << ") ,";
                         //if (static_cast<int>(beliefGraphVertices[newBeliefIdx].size()) > nodeIdx) {
                             //if (createdConnections.find(newBeliefIdx) == createdConnections.end()) {
                                 // std::pair<EdgeTrait , bool> p = add_edge(v, beliefGraphVertices[newBeliefIdx].at(nodeIdx), beliefGraph);
@@ -710,13 +718,48 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     debugGraph[d].state = beliefGraph[currVertex].state;
     debugGraph[d].fontcolor = beliefGraph[currVertex].fontcolor;
     debugGraph[d].color = beliefGraph[currVertex].color;
-    debugGraph[d].label = std::to_string(currVertex) + "\n" + std::to_string(std::round(costs[currVertex] * 100) / 100).substr(0, 4);
+    debugGraph[d].label = std::to_string(currVertex) + "\n" + std::to_string(completeGraphMap.find(currVertex)->second) + "\n" + std::to_string(std::round(costs[currVertex] * 100) / 100).substr(0, 4);
     debugGraph[d].pos = beliefGraph[currVertex].pos;
+
+    // add all adjacent vertices to debug_graph
+    Graph::adjacency_iterator it_, end_;
+    std::tie(it_, end_) = boost::adjacent_vertices(currVertex, beliefGraph);
+    for (; it_ != end_; it_++) {
+        VertexTrait d_n = add_vertex(debugGraph);
+        debugGraph[d_n].state = beliefGraph[it_.dereference()].state;
+        debugGraph[d_n].fontcolor = beliefGraph[it_.dereference()].fontcolor;
+        debugGraph[d_n].color = beliefGraph[it_.dereference()].color;
+        debugGraph[d_n].label = std::to_string(it_.dereference()) + "\n" + std::to_string(completeGraphMap.find(it_.dereference())->second) + "\n" + std::to_string(std::round(costs[it_.dereference()] * 100) / 100).substr(0, 4);
+        debugGraph[d_n].pos = beliefGraph[it_.dereference()].pos;
+
+        double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
+        if (boost::edge(currVertex, it_.dereference(), beliefGraph).second && beliefGraph[boost::edge(currVertex, it_.dereference(), beliefGraph).first].isWorldConnection) {
+            if (std::find(beliefGraph[currVertex].beliefChildren.begin(), beliefGraph[currVertex].beliefChildren.end(), it_.dereference()) != beliefGraph[currVertex].beliefChildren.end()) {
+                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+                EdgeTraitD d_e_n = d_p_n.first;
+                debugGraph[d_e_n].color = "red";
+                debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+            } else {
+                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, debugGraph);
+                EdgeTraitD d_e_n = d_p_n.first;
+                debugGraph[d_e_n].color = "red";
+                debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+            }
+
+        }
+        else {
+            std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+            EdgeTraitD d_e_n = d_p_n.first;
+            debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+        }
+    }
 
     constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{}, d);
 
     std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
     timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
+//    saveGraph(pathTree, "path", true, true);
+//    saveGraph(debugGraph, "debug", true, false);
     if (extendedOutput) {
         saveGraph(pathTree, "path", true, true);
         saveGraph(debugGraph, "debug", true, false);
@@ -1032,6 +1075,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         Graph::adjacency_iterator it, end;
         std::tie(it, end) = boost::adjacent_vertices(currVertex, beliefGraph);
         VertexTrait bestVertex = 0;
+        VertexTrait bestVertexObs = 0;
         bool isConn = !beliefGraph[currVertex].beliefChildren.empty();
         for (; it != end; it++) {
             VertexTrait der = it.dereference();
@@ -1061,13 +1105,46 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                             debugGraph[d].state = pathTree[w].state;
                             debugGraph[d].fontcolor = pathTree[w].fontcolor;
                             debugGraph[d].color = pathTree[w].color;
-                            debugGraph[d].label = std::to_string(it.dereference()) + "\n" + std::to_string(std::round(costs[it.dereference()] * 100) / 100).substr(0, 4);
+                            debugGraph[d].label = std::to_string(it.dereference()) + "\n" + std::to_string(completeGraphMap.find(it.dereference())->second) + "\n" + std::to_string(std::round(costs[it.dereference()] * 100) / 100).substr(0, 4);
                             debugGraph[d].pos = pathTree[w].pos;
 
                             std::pair<EdgeTraitD, bool> d_p = add_edge(d_v, d, debugGraph);
                             EdgeTraitD d_e = d_p.first;
                             debugGraph[d_e].color = "red";
                             debugGraph[d_e].label = std::to_string(std::round(si_->getStateSpace()->distanceBase(debugGraph[d_v].state, debugGraph[d].state, 2) * 100) / 100).substr(0, 4);
+
+                            // add all adjacent vertices to debug_graph
+                            Graph::adjacency_iterator it_, end_;
+                            std::tie(it_, end_) = boost::adjacent_vertices(it.dereference(), beliefGraph);
+                            for (; it_ != end_; it_++) {
+                                VertexTrait d_n = add_vertex(debugGraph);
+                                debugGraph[d_n].state = beliefGraph[it_.dereference()].state;
+                                debugGraph[d_n].fontcolor = beliefGraph[it_.dereference()].fontcolor;
+                                debugGraph[d_n].color = beliefGraph[it_.dereference()].color;
+                                debugGraph[d_n].label = std::to_string(it_.dereference()) + "\n" + std::to_string(completeGraphMap.find(it_.dereference())->second) + "\n" + std::to_string(std::round(costs[it_.dereference()] * 100) / 100).substr(0, 4);
+                                debugGraph[d_n].pos = beliefGraph[it_.dereference()].pos;
+
+                                double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
+                                if (boost::edge(currVertex, it_.dereference(), beliefGraph).second && beliefGraph[boost::edge(currVertex, it_.dereference(), beliefGraph).first].isWorldConnection) {
+                                    if (std::find(beliefGraph[currVertex].beliefChildren.begin(), beliefGraph[currVertex].beliefChildren.end(), it_.dereference()) != beliefGraph[currVertex].beliefChildren.end()) {
+                                        std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+                                        EdgeTraitD d_e_n = d_p_n.first;
+                                        debugGraph[d_e_n].color = "red";
+                                        debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+                                    } else {
+                                        std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, debugGraph);
+                                        EdgeTraitD d_e_n = d_p_n.first;
+                                        debugGraph[d_e_n].color = "red";
+                                        debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+                                    }
+
+                                }
+                                else {
+                                    std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+                                    EdgeTraitD d_e_n = d_p_n.first;
+                                    debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+                                }
+                            }
 
                         visited.insert(currVertex);
                             if (pathTree[w].fontcolor != "blue") {
@@ -1078,6 +1155,9 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                 } else if (bestVertex == 0 || costs[it.dereference()] < costs[bestVertex]) {
                     bestVertex = it.dereference();
                 }
+                if (costs[it.dereference()] == costs[currVertex] && bestVertexObs == 0) {
+                    bestVertexObs = it.dereference();
+                }
             }
         }
 
@@ -1085,6 +1165,15 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
 
         if (isConn || bestVertex == 0 || costs[bestVertex] == std::numeric_limits<double>::infinity()) {
             break;
+        }
+
+        if (bestVertexObs != 0) {
+            double calculatedCosts = costs[bestVertex] + si_->getStateSpace()->distanceBase(beliefGraph[currVertex].state, beliefGraph[bestVertex].state, 2);
+            double actualCost = costs[currVertex];
+            if (!(actualCost - 0.01 < calculatedCosts && calculatedCosts < actualCost + 0.01)) {
+                bestVertex = bestVertexObs;
+            }
+            bestVertexObs = 0;
         }
 
         VertexTraitD u = add_vertex(pathTree);
@@ -1106,7 +1195,7 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         debugGraph[d].state = pathTree[u].state;
         debugGraph[d].fontcolor = pathTree[u].fontcolor;
         debugGraph[d].color = pathTree[u].color;
-        debugGraph[d].label = std::to_string(bestVertex) + "\n" + std::to_string(std::round(costs[bestVertex] * 100) / 100).substr(0, 4);
+        debugGraph[d].label = std::to_string(bestVertex) + "\n" + std::to_string(completeGraphMap.find(bestVertex)->second) + "\n" + std::to_string(std::round(costs[bestVertex] * 100) / 100).substr(0, 4);
         debugGraph[d].pos = pathTree[u].pos;
 
         std::pair<EdgeTraitD, bool> d_p = add_edge(d_v, d, debugGraph);
@@ -1118,12 +1207,12 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
         Graph::adjacency_iterator it_, end_;
         std::tie(it_, end_) = boost::adjacent_vertices(currVertex, beliefGraph);
         for (; it_ != end_; it_++) {
-            if (it_.dereference() != bestVertex && /*not correct*/ visited.find(it_.dereference()) == visited.end()) {
+            if (it_.dereference() != bestVertex /*not correct*/ /*&& visited.find(it_.dereference()) == visited.end()*/) {
                 VertexTrait d_n = add_vertex(debugGraph);
                 debugGraph[d_n].state = beliefGraph[it_.dereference()].state;
                 debugGraph[d_n].fontcolor = beliefGraph[it_.dereference()].fontcolor;
                 debugGraph[d_n].color = beliefGraph[it_.dereference()].color;
-                debugGraph[d_n].label = std::to_string(it_.dereference()) + "\n" + std::to_string(std::round(costs[it_.dereference()] * 100) / 100).substr(0, 4);
+                debugGraph[d_n].label = std::to_string(it_.dereference()) + "\n" + std::to_string(completeGraphMap.find(it_.dereference())->second) + "\n" + std::to_string(std::round(costs[it_.dereference()] * 100) / 100).substr(0, 4);
                 debugGraph[d_n].pos = beliefGraph[it_.dereference()].pos;
 
                 double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
@@ -1205,48 +1294,48 @@ void ompl::geometric::Partial::freeMemory()
 
 // save graph as png
 void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels, bool usePos) {
-//    std::ofstream colored_dot_file(name + std::string(".dot"));
-//    boost::dynamic_properties dp_no_pos;
-//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-//    dp_no_pos.property("color", get(&VertexStruct::color, g));
-//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-//    if (useLabels) {
-//        dp_no_pos.property("label", get(&VertexStruct::label, g));
-//        dp_no_pos.property("label", get(&EdgeStruct::label, g));
-//    }
-//    if (usePos) {
-//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-//    }
-//    dp_no_pos.property("splines", boost::make_constant_property<Graph*>(true));
-//    dp_no_pos.property("overlap", boost::make_constant_property<Graph*>(false));
-//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-//    std::stringstream command;
-//    command << "neato -T png " << name << ".dot -o " << name << ".png";
-//    system(command.str().c_str());
+    std::ofstream colored_dot_file(name + std::string(".dot"));
+    boost::dynamic_properties dp_no_pos;
+    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+    dp_no_pos.property("color", get(&VertexStruct::color, g));
+    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+    if (useLabels) {
+        dp_no_pos.property("label", get(&VertexStruct::label, g));
+        dp_no_pos.property("label", get(&EdgeStruct::label, g));
+    }
+    if (usePos) {
+        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+    }
+    dp_no_pos.property("splines", boost::make_constant_property<Graph*>(true));
+    dp_no_pos.property("overlap", boost::make_constant_property<Graph*>(false));
+    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+    std::stringstream command;
+    command << "neato -T png " << name << ".dot -o " << name << ".png";
+    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLabels, bool usePos) {
-//    std::ofstream colored_dot_file(name + std::string(".dot"));
-//    boost::dynamic_properties dp_no_pos;
-//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-//    dp_no_pos.property("color", get(&VertexStruct::color, g));
-//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-//    if (useLabels) {
-//        dp_no_pos.property("label", get(&VertexStruct::label, g));
-//        dp_no_pos.property("label", get(&EdgeStruct::label, g));
-//    }
-//    if (usePos) {
-//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-//    }
-//    dp_no_pos.property("splines", boost::make_constant_property<GraphD*>(true));
-//    dp_no_pos.property("overlap", boost::make_constant_property<GraphD*>(false));
-//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-//    std::stringstream command;
-//    command << "neato -T png " << name << ".dot -o " << name << ".png";
-//    system(command.str().c_str());
+    std::ofstream colored_dot_file(name + std::string(".dot"));
+    boost::dynamic_properties dp_no_pos;
+    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+    dp_no_pos.property("color", get(&VertexStruct::color, g));
+    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+    if (useLabels) {
+        dp_no_pos.property("label", get(&VertexStruct::label, g));
+        dp_no_pos.property("label", get(&EdgeStruct::label, g));
+    }
+    if (usePos) {
+        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+    }
+    dp_no_pos.property("splines", boost::make_constant_property<GraphD*>(true));
+    dp_no_pos.property("overlap", boost::make_constant_property<GraphD*>(false));
+    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+    std::stringstream command;
+    command << "neato -T png " << name << ".dot -o " << name << ".png";
+    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
