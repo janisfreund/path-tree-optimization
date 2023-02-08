@@ -756,6 +756,49 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{}, d);
 
+    if (false) {
+        GraphD tmpGraph;
+        VertexTrait vertex_num = 188;
+        VertexTrait d = add_vertex(tmpGraph);
+        tmpGraph[d].state = beliefGraph[vertex_num].state;
+        tmpGraph[d].fontcolor = "red";
+        tmpGraph[d].color = "red";
+        tmpGraph[d].label = std::to_string(vertex_num) + "\n" + std::to_string(completeGraphMap.find(vertex_num)->second) + "\n" + std::to_string(std::round(costs[vertex_num] * 100) / 100).substr(0, 4);
+        tmpGraph[d].pos = beliefGraph[vertex_num].pos;
+        Graph::adjacency_iterator a_it, a_end;
+        std::tie(a_it, a_end) = boost::adjacent_vertices(vertex_num, beliefGraph);
+        for (; a_it != a_end; a_it++) {
+            VertexTrait d_n = add_vertex(tmpGraph);
+            tmpGraph[d_n].state = beliefGraph[a_it.dereference()].state;
+            tmpGraph[d_n].fontcolor = beliefGraph[a_it.dereference()].fontcolor;
+            tmpGraph[d_n].color = beliefGraph[a_it.dereference()].color;
+            tmpGraph[d_n].label = std::to_string(a_it.dereference()) + "\n" + std::to_string(completeGraphMap.find(a_it.dereference())->second) + "\n" + std::to_string(std::round(costs[a_it.dereference()] * 100) / 100).substr(0, 4);
+            tmpGraph[d_n].pos = beliefGraph[a_it.dereference()].pos;
+
+            double dis = si_->getStateSpace()->distanceBase(tmpGraph[d].state, tmpGraph[d_n].state, 2);
+            if (boost::edge(vertex_num, a_it.dereference(), beliefGraph).second && beliefGraph[boost::edge(vertex_num, a_it.dereference(), beliefGraph).first].isWorldConnection) {
+                if (std::find(beliefGraph[vertex_num].beliefChildren.begin(), beliefGraph[vertex_num].beliefChildren.end(), a_it.dereference()) != beliefGraph[vertex_num].beliefChildren.end()) {
+                    std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, tmpGraph);
+                    EdgeTraitD d_e_n = d_p_n.first;
+                    tmpGraph[d_e_n].color = "red";
+                    tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+                } else {
+                    std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, tmpGraph);
+                    EdgeTraitD d_e_n = d_p_n.first;
+                    tmpGraph[d_e_n].color = "red";
+                    tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+                }
+
+            }
+            else {
+                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, tmpGraph);
+                EdgeTraitD d_e_n = d_p_n.first;
+                tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+            }
+        }
+        saveGraph(tmpGraph, "188", true, false);
+    }
+
     std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
     timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
 //    saveGraph(pathTree, "path", true, true);
@@ -1146,18 +1189,33 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                                 }
                             }
 
-                        visited.insert(currVertex);
+                            visited.insert(it.dereference());
                             if (pathTree[w].fontcolor != "blue") {
                                 constructPathTree(beliefGraph, costs, w, it.dereference(), visited, d);
                             }
 //                        }
                     }
-                } else if (bestVertex == 0 || costs[it.dereference()] < costs[bestVertex]) {
-                    bestVertex = it.dereference();
+                } else {
+                    if (bestVertex == 0 || ((costs[it.dereference()] + si_->getStateSpace()->distanceBase(beliefGraph[currVertex].state, beliefGraph[it.dereference()].state, 2)) <= (costs[bestVertex] + si_->getStateSpace()->distanceBase(beliefGraph[currVertex].state, beliefGraph[bestVertex].state, 2)))) {
+                        if (si_->getStateSpace()->distanceBase(beliefGraph[currVertex].state,
+                                                               beliefGraph[it.dereference()].state, 2) < 1e-2) {
+                            double calculatedCosts = costs[bestVertex] +
+                                                     si_->getStateSpace()->distanceBase(beliefGraph[currVertex].state,
+                                                                                        beliefGraph[bestVertex].state,
+                                                                                        2);
+                            double actualCost = costs[currVertex];
+                            if (!(actualCost - 0.01 < calculatedCosts && calculatedCosts < actualCost + 0.01) ||
+                                bestVertex == 0) {
+                                bestVertex = it.dereference();
+                            }
+                        } else {
+                            bestVertex = it.dereference();
+                        }
+                    }
                 }
-                if (costs[it.dereference()] == costs[currVertex] && bestVertexObs == 0) {
-                    bestVertexObs = it.dereference();
-                }
+//                if (costs[it.dereference()] == costs[currVertex] && bestVertexObs == 0) {
+//                    bestVertexObs = it.dereference();
+//                }
             }
         }
 
@@ -1167,14 +1225,14 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
             break;
         }
 
-        if (bestVertexObs != 0) {
-            double calculatedCosts = costs[bestVertex] + si_->getStateSpace()->distanceBase(beliefGraph[currVertex].state, beliefGraph[bestVertex].state, 2);
-            double actualCost = costs[currVertex];
-            if (!(actualCost - 0.01 < calculatedCosts && calculatedCosts < actualCost + 0.01)) {
-                bestVertex = bestVertexObs;
-            }
-            bestVertexObs = 0;
-        }
+//        if (bestVertexObs != 0) {
+//            double calculatedCosts = costs[bestVertex] + si_->getStateSpace()->distanceBase(beliefGraph[currVertex].state, beliefGraph[bestVertex].state, 2);
+//            double actualCost = costs[currVertex];
+//            if (!(actualCost - 0.01 < calculatedCosts && calculatedCosts < actualCost + 0.01)) {
+//                bestVertex = bestVertexObs;
+//            }
+//            bestVertexObs = 0;
+//        }
 
         VertexTraitD u = add_vertex(pathTree);
         pathTree[u].state = beliefGraph[bestVertex].state;
@@ -1205,9 +1263,9 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
 
         // add all adjacent vertices to debug_graph
         Graph::adjacency_iterator it_, end_;
-        std::tie(it_, end_) = boost::adjacent_vertices(currVertex, beliefGraph);
+        std::tie(it_, end_) = boost::adjacent_vertices(bestVertex, beliefGraph);
         for (; it_ != end_; it_++) {
-            if (it_.dereference() != bestVertex /*not correct*/ /*&& visited.find(it_.dereference()) == visited.end()*/) {
+            if (it_.dereference() != currVertex /*not correct*/ /*&& visited.find(it_.dereference()) == visited.end()*/) {
                 VertexTrait d_n = add_vertex(debugGraph);
                 debugGraph[d_n].state = beliefGraph[it_.dereference()].state;
                 debugGraph[d_n].fontcolor = beliefGraph[it_.dereference()].fontcolor;
@@ -1216,8 +1274,8 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
                 debugGraph[d_n].pos = beliefGraph[it_.dereference()].pos;
 
                 double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
-                if (boost::edge(currVertex, it_.dereference(), beliefGraph).second && beliefGraph[boost::edge(currVertex, it_.dereference(), beliefGraph).first].isWorldConnection) {
-                    if (std::find(beliefGraph[currVertex].beliefChildren.begin(), beliefGraph[currVertex].beliefChildren.end(), it_.dereference()) != beliefGraph[currVertex].beliefChildren.end()) {
+                if (boost::edge(bestVertex, it_.dereference(), beliefGraph).second && beliefGraph[boost::edge(bestVertex, it_.dereference(), beliefGraph).first].isWorldConnection) {
+                    if (std::find(beliefGraph[bestVertex].beliefChildren.begin(), beliefGraph[bestVertex].beliefChildren.end(), it_.dereference()) != beliefGraph[bestVertex].beliefChildren.end()) {
                         std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
                         EdgeTraitD d_e_n = d_p_n.first;
                         debugGraph[d_e_n].color = "red";
