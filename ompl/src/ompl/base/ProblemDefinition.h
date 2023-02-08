@@ -478,6 +478,14 @@ namespace ompl
                 return seed;
             }
 
+            void setSolutionCost(double cost) {
+                solutionCost = cost;
+            }
+
+            double getSolutionCost() {
+                return solutionCost;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -517,6 +525,7 @@ namespace ompl
             std::vector<std::vector<State *>> solutionsRaw;
             std::vector<std::pair<State *, std::vector<int>>> observationPoints;
             std::vector<int> solutionIdx;
+            double solutionCost;
         };
     }
 }

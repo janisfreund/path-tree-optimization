@@ -61,9 +61,12 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     if (pdef_->getSeed() != -1) {
         int seed = pdef_->getSeed();
-        rng_.setLocalSeed(seed);
+        rng_.setLocalSeed(0);
         sampler_->setSeed(seed);
         std::cout << "Using seed " << seed << std::endl;
+    }
+    else {
+        rng_.setLocalSeed(0);
     }
 
     std::vector<std::string> colors = {"aquamarine", "blue", "coral", "cyan", "darkred", "gold", "lime", "webpurple"};
@@ -691,6 +694,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::chrono::steady_clock::time_point t_policy_end = std::chrono::steady_clock::now();
     timePolicyExtraction = (std::chrono::duration_cast<std::chrono::milliseconds>(t_policy_end - t_policy_start).count()) / 1000.0;
 
+    pdef_->setSolutionCost(costs[0]);
+
     // print costs
     std::cout << "Costs: " << std::endl;
     int n = 0;
@@ -756,9 +761,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{}, d);
 
-    if (false) {
+    if (true) {
         GraphD tmpGraph;
-        VertexTrait vertex_num = 188;
+        VertexTrait vertex_num = 126;
         VertexTrait d = add_vertex(tmpGraph);
         tmpGraph[d].state = beliefGraph[vertex_num].state;
         tmpGraph[d].fontcolor = "red";
@@ -801,8 +806,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
     timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
-//    saveGraph(pathTree, "path", true, true);
-//    saveGraph(debugGraph, "debug", true, false);
+    saveGraph(pathTree, "path", true, true);
+    saveGraph(debugGraph, "debug", true, false);
     if (extendedOutput) {
         saveGraph(pathTree, "path", true, true);
         saveGraph(debugGraph, "debug", true, false);
@@ -919,6 +924,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             std::vector<base::State*> pathR;
             VertexTraitD currNode = v;
             int c = 0;
+            std::vector<base::BeliefState> stateBeliefs;
             while (currNode != 0) {
                 std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
                 getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
@@ -927,6 +933,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                 std::cout << std::endl;
                 //path->append(pathTree[currNode].state);
                 pathR.push_back(pathTree[currNode].state);
+                stateBeliefs.push_back(pathTree[currNode].beliefState);
                 c++;
                 GraphD::in_edge_iterator it, end;
                 std::tie(it, end) = boost::in_edges(currNode, pathTree);
@@ -944,6 +951,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             }
             //path->append(pathTree[currNode].state);
             pathR.push_back(pathTree[currNode].state);
+            stateBeliefs.push_back(pathTree[currNode].beliefState);
             std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
             getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
             std::cout << " with belief state ";
@@ -968,7 +976,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                             //sPath->interpolate(20);
                             if (true/*specs_.optimizingPaths*/) {
                                 std::vector<int> compatibleWorld;
-                                for (float f : world->beliefToWorld(pathTree[v].beliefState)) {
+                                for (float f : world->beliefToWorld(stateBeliefs[i+1])) {
                                     if (fabs(f) < 1e-3) {
                                         compatibleWorld.push_back(0);
                                     } else {
