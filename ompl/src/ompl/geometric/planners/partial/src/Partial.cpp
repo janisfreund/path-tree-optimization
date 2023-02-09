@@ -129,7 +129,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     // periodically check if ptc() returns true.
     // if it does, terminate planning.
     std::chrono::steady_clock::time_point t_sampling_start = std::chrono::steady_clock::now();
-    while (!ptc()) {
+    int numIterations = pdef_->getIterations();
+    bool iterationTermination = false;
+    if (numIterations > 0) {
+        iterationTermination = true;
+    }
+    while (!(ptc() && !iterationTermination) && (numIterations > 0 || !iterationTermination)) {
+        numIterations--;
         // Sample world
         int sampledWorldIdx;
         if (sampledIdx <= world->getNumWorldStates()) {
@@ -761,7 +767,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{}, d);
 
-    if (true) {
+    if (false) {
         GraphD tmpGraph;
         VertexTrait vertex_num = 126;
         VertexTrait d = add_vertex(tmpGraph);
@@ -806,8 +812,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
     timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
-    saveGraph(pathTree, "path", true, true);
-    saveGraph(debugGraph, "debug", true, false);
+//    saveGraph(pathTree, "path", true, true);
+//    saveGraph(debugGraph, "debug", true, false);
     if (extendedOutput) {
         saveGraph(pathTree, "path", true, true);
         saveGraph(debugGraph, "debug", true, false);
@@ -1360,48 +1366,48 @@ void ompl::geometric::Partial::freeMemory()
 
 // save graph as png
 void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-        dp_no_pos.property("label", get(&EdgeStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    dp_no_pos.property("splines", boost::make_constant_property<Graph*>(true));
-    dp_no_pos.property("overlap", boost::make_constant_property<Graph*>(false));
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//        dp_no_pos.property("label", get(&EdgeStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    dp_no_pos.property("splines", boost::make_constant_property<Graph*>(true));
+//    dp_no_pos.property("overlap", boost::make_constant_property<Graph*>(false));
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLabels, bool usePos) {
-    std::ofstream colored_dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp_no_pos;
-    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
-    dp_no_pos.property("color", get(&EdgeStruct::color, g));
-    dp_no_pos.property("color", get(&VertexStruct::color, g));
-    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    if (useLabels) {
-        dp_no_pos.property("label", get(&VertexStruct::label, g));
-        dp_no_pos.property("label", get(&EdgeStruct::label, g));
-    }
-    if (usePos) {
-        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
-    }
-    dp_no_pos.property("splines", boost::make_constant_property<GraphD*>(true));
-    dp_no_pos.property("overlap", boost::make_constant_property<GraphD*>(false));
-    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
-    std::stringstream command;
-    command << "neato -T png " << name << ".dot -o " << name << ".png";
-    system(command.str().c_str());
+//    std::ofstream colored_dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp_no_pos;
+//    dp_no_pos.property("node_id",   get(boost::vertex_index, g));
+//    dp_no_pos.property("color", get(&EdgeStruct::color, g));
+//    dp_no_pos.property("color", get(&VertexStruct::color, g));
+//    dp_no_pos.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    if (useLabels) {
+//        dp_no_pos.property("label", get(&VertexStruct::label, g));
+//        dp_no_pos.property("label", get(&EdgeStruct::label, g));
+//    }
+//    if (usePos) {
+//        dp_no_pos.property("pos", get(&VertexStruct::pos, g));
+//    }
+//    dp_no_pos.property("splines", boost::make_constant_property<GraphD*>(true));
+//    dp_no_pos.property("overlap", boost::make_constant_property<GraphD*>(false));
+//    boost::write_graphviz_dp(colored_dot_file, g, dp_no_pos);
+//    std::stringstream command;
+//    command << "neato -T png " << name << ".dot -o " << name << ".png";
+//    system(command.str().c_str());
     std::cout << "Graph " << name << " saved." << std::endl;
 }
 

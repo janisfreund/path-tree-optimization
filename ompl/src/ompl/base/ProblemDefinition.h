@@ -486,6 +486,14 @@ namespace ompl
                 return solutionCost;
             }
 
+            void setIterations(int iterations) {
+                maxIterations = iterations;
+            }
+
+            int getIterations() {
+                return maxIterations;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -520,6 +528,7 @@ namespace ompl
             // 0 -> fixed goal; 1 -> multiple goals + #PoObjects=#worldStates; 2 -> multiple goals + all world states
             int mode;
             int seed = -1;
+            int maxIterations = -1;
 
             std::vector<std::vector<float>> pWorlds;
             std::vector<std::vector<State *>> solutionsRaw;
