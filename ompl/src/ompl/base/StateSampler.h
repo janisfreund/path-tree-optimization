@@ -73,7 +73,7 @@ namespace ompl
             {
                 // for debugging
 //                rng_.setSeed(42);
-//                rng_.setLocalSeed(42);
+                rng_.setLocalSeed(1);
             }
 
             virtual ~StateSampler() = default;

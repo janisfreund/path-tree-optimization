@@ -12,6 +12,7 @@ namespace ompl
 {
     namespace base
     {
+        // state of partially observable objects
         // TODO don't hardcode states
         enum ObjectState {
             NONEXISTENT,
@@ -20,97 +21,46 @@ namespace ompl
 
         typedef std::vector<float> BeliefState;
 
-        class POObject
-        {
-        public:
-            POObject(std::vector<double> pos, std::vector<double> len) {
-                pos_ = pos;
-                len_ = len;
-                // targetFound_ = targetFound;
-            }
-
-            virtual ~POObject() = default;
-
-            std::vector<double> getPos() {
-                return pos_;
-            }
-
-            std::vector<double> getLen() {
-                return len_;
-            }
-
-            ObjectState getSate() {
-                return objectState_;
-            }
-
-            void setState(ObjectState objectState) {
-                objectState_ = objectState;
-            }
-
-            /// returns whether the object can be seen from the current state of the robot
-//            bool observeCurrentState(const State *state) {
-//                return targetFound_(state);
-//            }
-
-        private:
-            /// pos = center; len = extends
-            std::vector<double> pos_;
-            std::vector<double> len_;
-            ObjectState objectState_;
-            // std::function<bool(const State *state)> targetFound_;
-
-        };
-
         class World
         {
         public:
             World() {}
 
-            World(int numObjects, bool changeableFinalStates);
+            /** \brief Constructor */
+            World(int numObjects, bool changeableFinalStates, BeliefState initBelief);
 
+            /** \brief Destructor */
             virtual ~World() = default;
 
+            /** \brief get vector of world states */
             std::vector<std::vector<ObjectState>> getWorldStates() {
                 return worldStates_;
             }
 
+            /** \brief get number of distinct world states */
             int getNumWorldStates() {
                 return static_cast<int>(worldStates_.size());
             }
 
+            /** \brief get number of partially observable objects */
             int getNumObjects() {
                 return numObjects_;
             }
 
-//            void setState(std::vector<ObjectState> objectStates) {
-//                std::cout << "1st setState called." << std::endl;
-//                objectStates_ = objectStates;
-//                if (static_cast<int>(objectStates_.size()) == 0) {
-//                    std::cout << "Invalid state size!" << std::endl;
-//                }
-//            }
-
+            /** \brief set world state */
             void setState(int idx) {
-//                std::cout << "2nd setState called." << std::endl;
                 objectStates_ = worldStates_.at(idx);
-                if (static_cast<int>(objectStates_.size()) == 0) {
-                    std::cout << "Invalid state sizes set!" << std::endl;
-                }
-//                std::cout << "States size: " << static_cast<int>(objectStates_.size()) << std::endl;
             }
 
+            /** \brief get world state */
             std::vector<ObjectState> getState() {
-                if (static_cast<int>(objectStates_.size()) == 0) {
-                    std::cout << "Invalid state size!" << std::endl;
-                    std::cout << "Real size: "
-                              << static_cast<int>(objectStates_.size()) << "; num objects: " << numObjects_
-                              << "; world states [0] size: " << static_cast<int>(worldStates_[0].size()) << std::endl;
-                }
                 return objectStates_;
             }
 
+            /** \brief get world state as ints */
             std::vector<int> getStateInt();
 
+            /** \brief convert object state to a vector of ints */
             std::vector<int> getStateIntFromObjectState(std::vector<ObjectState> st) {
                 std::vector<int> intStates;
                 for (ObjectState objectState : st) {
@@ -119,6 +69,7 @@ namespace ompl
                 return intStates;
             }
 
+            /** \brief get index of a given state of the world */
             // TODO improve
             int getStateIdx(std::vector<int> worldState) {
                 int idx = 0;
@@ -136,14 +87,17 @@ namespace ompl
                 }
             }
 
+            /** \brief get beliefStates_ */
             std::vector<BeliefState> getAllBeliefStates() {
                 return beliefStates_;
             }
 
+            /** \brief get beliefStateProbabilities[idx] */
             double getBeliefStateProbability(int idx) {
                 return beliefStateProbabilities[idx];
             }
 
+            /** \brief return if observing a given object changes the belief */
             bool beliefChanged(std::vector<float> oldBeliefs, int observableObject) {
                 if(!calcBelief(oldBeliefs, std::vector<int>{observableObject}, std::vector<ObjectState>{ObjectState(0)}).empty()) {
                     return true;
@@ -151,16 +105,18 @@ namespace ompl
                 return false;
             }
 
+            /** \brief return beliefs after observing a given obejct with an old belief*/
             std::vector<BeliefState> observe(BeliefState oldBeliefs, int observableObject);
 
+            /** \brief get all beliefs that are compatible in given worlds */
             std::pair<std::vector<int>, std::vector<BeliefState>> getCompatibleBeliefs(std::vector<int> worldValidities);
 
+            /** \brief get index of given belief */
             int getBeliefIdx(BeliefState belief) {
                 int idx = 0;
                 for (BeliefState testBelief : beliefStates_) {
                     bool isEqual = true;
                     for (int i = 0; i < getNumWorldStates(); i++) {
-                        // std::cout << "#States: " << getNumWorldStates() << "; #Test: " << static_cast<int>(testBelief.size()) << "; #Belief: " << static_cast<int>(belief.size()) << std::endl;
                         if (fabs(testBelief.at(i) - belief.at(i)) > 1e-3) {
                             isEqual = false;
                         }
@@ -176,6 +132,7 @@ namespace ompl
                 return idx;
             }
 
+            /** \brief calculate branching probability from one belief to another */
             double calcBranchingProbabilitiy(BeliefState parentBs, BeliefState childBs) {
                 double p = 0;
                 for (int i = 0; i < getNumWorldStates(); i++) {
@@ -186,8 +143,10 @@ namespace ompl
                 return p;
             }
 
+            /** \brief returns vector consisting of probabilities for each partially observable object to be present in given belief */
             std::vector<float> beliefToWorld(BeliefState b);
 
+            /** \brief print a belief state */
             void printBelief(BeliefState bs) {
                 std::cout << "[";
                 for (float f : bs) {
@@ -196,6 +155,7 @@ namespace ompl
                 std::cout << "]";
             }
 
+            /** \brief print a vector of ints */
             void printStateFromInt(std::vector<int> s) {
                 std::cout << "[";
                 for (int i : s) {
@@ -204,21 +164,32 @@ namespace ompl
                 std::cout << "]";
             }
 
+            /** \brief current states of the partially observable objects */
             std::vector<ObjectState> objectStates_;
 
         private:
+            /** \brief fills worldStates_ with all possible combinations of objects states */
             void generateCombinations(std::vector<ObjectState> combination, int len, int index);
 
-            // get world indices in which an object DOESN'T have a certain object state
+            /** \brief get world indices in which an object DOESN'T have a certain object state */
             std::set<int> getNegativeWorldIndices(int objIndx, ObjectState state);
 
+            /** \brief fills beliefStates_ vector with all possible belief states given a initial belief */
             void calcReachableBeliefStates(std::vector<float> initialBeliefSate, std::vector<int> undiscoveredObjects);
 
+            /** \brief calculates the resulting beliefs if certain objects are observed to have certain states in a specific belief*/
             std::vector<float> calcBelief(std::vector<float> oldBeliefs, std::vector<int> observableObjects, std::vector<ObjectState> states);
 
+            /** \brief number of partially observable objects */
             int numObjects_;
+
+            /** \brief all the different states the world can have */
             std::vector<std::vector<ObjectState>> worldStates_;
+
+            /** \brief all possible belief states */
             std::vector<BeliefState> beliefStates_;
+
+            /** \brief probability of getting to one specific belief state */
             std::vector<double> beliefStateProbabilities;
         };
     }

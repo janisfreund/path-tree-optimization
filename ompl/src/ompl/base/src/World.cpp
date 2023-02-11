@@ -4,11 +4,11 @@
 
 #include "ompl/base/World.h"
 
-ompl::base::World::World(int numObjects, bool changeableFinalStates) {
+ompl::base::World::World(int numObjects, bool changeableFinalStates, BeliefState initBelief) {
     std::cout << "New world set." << std::endl;
     numObjects_ = numObjects;
 
-    /// fill worldStates with all possible combinations
+    // fill worldStates with all possible combinations
     if (changeableFinalStates) {
         for (int i = 0; i < numObjects; i++) {
             std::vector<ObjectState> ws;
@@ -25,10 +25,12 @@ ompl::base::World::World(int numObjects, bool changeableFinalStates) {
         generateCombinations(std::vector<ObjectState>{}, numObjects, 0);
     }
 
-    // fill beliefStates with all possible combinations
     std::vector<float> initialBelief;
-    for (int i = 0; i < getNumWorldStates(); i++) {
-        initialBelief.push_back(1. / getNumWorldStates());
+    if (initBelief.empty()) {
+        // initialize initial belief uniformly
+        for (int i = 0; i < getNumWorldStates(); i++) {
+            initialBelief.push_back(1. / getNumWorldStates());
+        }
     }
     std::vector<int> initialObjects;
     for (int i = 0; i < getNumObjects(); i++) {
@@ -37,15 +39,8 @@ ompl::base::World::World(int numObjects, bool changeableFinalStates) {
     beliefStates_.push_back(initialBelief);
     beliefStateProbabilities.push_back(1.);
 
+    // fill beliefStates with all possible combinations
     calcReachableBeliefStates(initialBelief, initialObjects);
-
-//    for (int i = 0; i < getNumWorldStates(); i++) {
-//        std::vector<float> definiteState(getNumWorldStates(), 0);
-//        definiteState.at(i) = 1;
-//        beliefStates_.push_back(definiteState);
-//    }
-
-    // targetFound_ = targetFound;
 }
 
 std::vector<ompl::base::BeliefState> ompl::base::World::observe(BeliefState oldBeliefs, int observableObject) {
@@ -59,13 +54,6 @@ std::vector<ompl::base::BeliefState> ompl::base::World::observe(BeliefState oldB
     }
 
     std::vector<std::vector<float>> newBeliefs;
-//                std::vector<std::vector<ObjectState>> *combinations;
-//                generateCombinations(combinations, std::vector<ObjectState>{}, static_cast<int>(observableObjects.size()), 0);
-//                std::vector<std::vector<ObjectState>> combs = *combinations;
-//                for (std::vector<ObjectState> states : *combinations) {
-//                    std::vector<float> beliefs = calcBelief(oldBeliefs, observableObjects, states);
-//                    newBeliefs.push_back(beliefs);
-//                }
     for (int i = 0; i < 2; i++) {
         std::vector<float> beliefs = calcBelief(oldBeliefs, std::vector<int>{observableObject}, std::vector<ObjectState>{ObjectState(i)});
         newBeliefs.push_back(beliefs);
@@ -130,16 +118,6 @@ void ompl::base::World::calcReachableBeliefStates(std::vector<float> initialBeli
             if (exists) {
                 continue;
             }
-            // check if belief is final
-//            bool isDefinite = false;
-//            for (float b : belief) {
-//                if (fabs(1. - b) < 1e-3) {
-//                    isDefinite = true;
-//                }
-//            }
-//            if (isDefinite) {
-//                continue;
-//            }
             // add belief if it is not final
             beliefStates_.push_back(belief);
             double old_prob = beliefStateProbabilities[getBeliefIdx(initialBeliefSate)];
@@ -232,12 +210,6 @@ std::vector<int> ompl::base::World::getStateInt() {
     std::vector<int> intStates;
     for (ObjectState objectState : objectStates_) {
         intStates.push_back(static_cast<int>(objectState));
-    }
-    if (static_cast<int>(intStates.size()) == 0) {
-        std::cout << "Invalid state size!" << std::endl;
-        std::cout << "Returned size: " << static_cast<int>(intStates.size()) << "; real size: "
-            << static_cast<int>(objectStates_.size()) << "; num objects: " << numObjects_
-            << "; world states [0] size: " << static_cast<int>(worldStates_[0].size()) << std::endl;
     }
     return intStates;
 }

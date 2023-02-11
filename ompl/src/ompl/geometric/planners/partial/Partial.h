@@ -46,10 +46,6 @@ namespace ompl
                         nn_.at(i).reset(tools::SelfConfig::getDefaultNearestNeighbors<Motion *>(this));
                     nn_.at(i)->setDistanceFunction([this](const Motion *a, const Motion *b) { return distanceFunction(a, b); });
                 }
-
-                // for debugging
-//                rng_.setSeed(42);
-//                rng_.setLocalSeed(42);
             }
 
             virtual void clear(void)
@@ -69,6 +65,14 @@ namespace ompl
                 completeGraphMap.clear();
                 debugGraph.clear();
                 costs.clear();
+                if (pdef_->getSeed() != -1) {
+                    int seed = pdef_->getSeed();
+                    rng_.setLocalSeed(0);
+                    sampler_->setSeed(seed);
+                }
+                else {
+                    rng_.setLocalSeed(0);
+                }
             }
 
             void setPathOptimization(bool b)
@@ -76,7 +80,6 @@ namespace ompl
                 specs_.optimizingPaths = b;
             }
 
-        // protected:
             /** \brief Representation of a motion
 
                 This only contains pointers to parent motions as we
@@ -108,9 +111,6 @@ namespace ompl
             /** \brief Compute distance between motions (actually distance between contained states) */
             double distanceFunction(const Motion *a, const Motion *b) const
             {
-//                return si_->distance(a->state, b->state);
-
-                // return distance of base poses
                 return si_->distanceBase(a->state, b->state, 2);
             }
 
@@ -124,7 +124,6 @@ namespace ompl
                 std::vector<int> observableObjects;
                 std::vector<float> beliefState;
                 std::vector<int> beliefChildren;
-//                std::vector<bool> isFinal;
                 int finalSateIdx;
             };
 
@@ -167,7 +166,6 @@ namespace ompl
             /** \brief The fraction of time the goal is picked as the state to expand towards (if such a state is
              * available) */
             double goalBias_{.05};
-//            double goalBias_{.2};
 
             /** \brief The random number generator */
             RNG rng_;
