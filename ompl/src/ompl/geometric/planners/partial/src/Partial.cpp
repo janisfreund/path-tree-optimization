@@ -62,7 +62,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         int seed = pdef_->getSeed();
         rng_.setLocalSeed(0);
         sampler_->setSeed(seed);
-        std::cout << "Using seed " << seed << std::endl;
     }
     else {
         rng_.setLocalSeed(0);
@@ -142,7 +141,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             sampledWorldIdx = randomGraphIdx - 1;
         }
         else {
-            sampledWorldIdx = rand() % world->getNumWorldStates();
+            sampledWorldIdx = rng_.uniformInt(0, world->getNumWorldStates() - 1);
         }
         // set world to the sampled idx
         world->setState(sampledWorldIdx);
@@ -203,19 +202,13 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         std::string pos_str = std::to_string(x) + ", " + std::to_string(y) + "!";
         randomGraph[v].pos = pos_str;
 
-        std::cout << "Sampled state: " << pos_str << std::endl;
+        if (extendedOutput) {std::cout << "Sampled state: " << pos_str << std::endl;}
 
         // TODO currently using camera image taken in a world in which all objects are present
         world->setState(world->getNumWorldStates() - 1);
 
         // check which objects are observable from sampled state
         randomGraph[v].observableObjects = si_->targetFound(dstate);
-
-        std::cout << "Observable objects: [";
-        for (int obsIdx : randomGraph[v].observableObjects) {
-            std::cout << obsIdx << " ";
-        }
-        std::cout << "]" << std::endl;
 
         // store sampled state in random graph
         randomGraphVertices.push_back(v);
@@ -383,14 +376,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     if (pdef_->getMode() == 1) {
                         if (!(fabs(beliefGraph[v].beliefState.at(beliefGraph[v].finalSateIdx) - 1) < 1e-3)) {
                             beliefGraph[v].fontcolor = "";
-                            std::cout << "No final state: State " << v << " (" << node << ") with belief ";
-                            world->printBelief(b);
-                            std::cout << std::endl;
-                        }
-                        else {
-                            std::cout << "New final state: State " << v << " (" << node << ") with belief ";
-                            world->printBelief(b);
-                            std::cout << std::endl;
                         }
                     }
                 }
@@ -478,7 +463,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                         beliefGraph[e].color = "red";
                         beliefGraph[v].beliefChildren.push_back(graphMap[newBeliefIdx].find(graphMapReverse[beliefIdx].find(v)->second)->second);
                     }
-                    std::cout << std::endl;
                 }
             }
         }
@@ -886,7 +870,6 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     if (extendedOutput) {getSpaceInformation()->getStateSpace()->printState(pathSeg->getState(i), std::cout);}
                     path->append(pathSeg->getState(i));
                 }
-                if (extendedOutput) {std::cout << std::endl;}
             }
         }
         else {
@@ -921,7 +904,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     std::cout << "Optimal path tree creation time: " << timeOptimalPathTree << "s" << std::endl;
     std::cout << std::endl << std::endl;
 
-    std::cout << "Distances:" << std::endl;
+    if (static_cast<int>(distancesDirect.size()) > 0) {std::cout << "Distances:" << std::endl;}
     int disIdx = 0;
     for (int i = 0; i < static_cast<int>(distancesDirect.size()); i++) {
         std::cout << "----- Goal State " << disIdx << " -----" << std::endl;

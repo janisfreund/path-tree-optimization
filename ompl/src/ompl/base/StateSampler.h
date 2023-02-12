@@ -43,6 +43,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <iostream>
 
 namespace ompl
 {
@@ -73,7 +74,7 @@ namespace ompl
             {
                 // for debugging
 //                rng_.setSeed(42);
-                rng_.setLocalSeed(1);
+//                rng_.setLocalSeed(1);
             }
 
             virtual ~StateSampler() = default;
