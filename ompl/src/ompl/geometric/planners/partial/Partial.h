@@ -143,7 +143,17 @@ namespace ompl
             typedef boost::graph_traits<GraphD>::vertex_descriptor VertexTraitD;
             typedef boost::graph_traits<GraphD>::edge_descriptor EdgeTraitD;
 
+            Graph createRandomGraph(const ompl::base::PlannerTerminationCondition &ptc);
+
+            Graph createBeliefGraph(Graph randomGraph);
+
+            std::vector<double> calculateCosts(Graph beliefGraph);
+
             void constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited, VertexTrait d_v);
+
+            void pathExtraction();
+
+            void debugSingleVertex(Graph beliefGraph, VertexTrait v);
 
             void getPlannerData(base::PlannerData &data) const override;
 
@@ -170,7 +180,28 @@ namespace ompl
             /** \brief The random number generator */
             RNG rng_;
 
+            // define variables for benchmarking time needed by specific parts of the planner and distances of the planned paths
+            std::vector<double> distancesDirect;
+            std::vector<double> distancesPlanned;
+            double timeTotal = 0;
+            double timeSampling = 0;
+            double timeCheckMotion = 0;
+            double timeBeliefGraph = 0;
+            double timePolicyExtraction = 0;
+            double timeOptimalPathTree = 0;
+
+            // print graphs etc.
+            bool extendedOutput = false;
+            // stop sampling if there is a solution for every world
+            bool terminateIfSolutionFound = false;
+
+            // define colors for visualizing different beliefs in graphs
+            std::vector<std::string> colors = {"aquamarine", "blue", "coral", "cyan", "darkred", "gold", "lime", "webpurple"};
+
             std::vector<Motion *> lastGoalMotion_;
+            int numWorldStates;
+            ompl::base::World *world;
+            std::vector<base::State *> goalStates;
 
             GraphD pathTree;
             std::vector<VertexTraitD> pathTreeFinalStates;

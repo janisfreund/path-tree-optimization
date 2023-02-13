@@ -19,16 +19,9 @@ ompl::geometric::Partial::~Partial()
 }
 
 ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::PlannerTerminationCondition &ptc) {
-    std::cout << "Started solving process using planner Partial.\n";
-
-    // print graphs etc.
-    bool extendedOutput = false;
-    // stop sampling if there is a solution for every world
-    bool terminateIfSolutionFound = false;
-
     // get the world and number of different possible world states from space information
-    ompl::base::World *world = si_->getWorld();
-    int numWorldStates = world->getNumWorldStates();
+    world = si_->getWorld();
+    numWorldStates = world->getNumWorldStates();
 
     // vector for storing motions that lead to final states
     for (int i = 0; i < numWorldStates; i++) {
@@ -36,17 +29,9 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     }
 
     // define final states for each world
-    std::vector<base::State *> goalStates = pdef_->getGoalStates();
+    goalStates = pdef_->getGoalStates();
 
-    // define variables for benchmarking time needed by specific parts of the planner and distances of the planned paths
-    std::vector<double> distancesDirect;
-    std::vector<double> distancesPlanned(static_cast<int>(goalStates.size()));
-    double timeTotal = 0;
-    double timeSampling = 0;
-    double timeCheckMotion = 0;
-    double timeBeliefGraph = 0;
-    double timePolicyExtraction = 0;
-    double timeOptimalPathTree = 0;
+    distancesPlanned = std::vector<double>(static_cast<int>(goalStates.size()));
 
     std::chrono::steady_clock::time_point t_total_start = std::chrono::steady_clock::now();
 
@@ -67,9 +52,142 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         rng_.setLocalSeed(0);
     }
 
-    // define colors for visualizing different beliefs in graphs
-    std::vector<std::string> colors = {"aquamarine", "blue", "coral", "cyan", "darkred", "gold", "lime", "webpurple"};
+    Graph randomGraph = createRandomGraph(ptc);
 
+    Graph beliefGraph = createBeliefGraph(randomGraph);
+
+    std::vector<double> costs = calculateCosts(beliefGraph);
+
+    std::chrono::steady_clock::time_point t_pathTree_start = std::chrono::steady_clock::now();
+
+    // create optimal path tree
+    VertexTrait currVertex = 0;
+    VertexTrait v = add_vertex(pathTree);
+    pathTree[v].state = beliefGraph[currVertex].state;
+    pathTree[v].fontcolor = beliefGraph[currVertex].fontcolor;
+    pathTree[v].finalSateIdx = beliefGraph[currVertex].finalSateIdx;
+    pathTree[v].color = beliefGraph[currVertex].color;
+    pathTree[v].beliefState = beliefGraph[currVertex].beliefState;
+    pathTree[v].label = beliefGraph[currVertex].label;
+    pathTree[v].observableObjects = beliefGraph[currVertex].observableObjects;
+    pathTree[v].pos = beliefGraph[currVertex].pos;
+
+    // create a debug graph for visualizing the path tree including the costs of vertices and edge + all adjacent vertices
+    VertexTrait d = add_vertex(debugGraph);
+    debugGraph[d].state = beliefGraph[currVertex].state;
+    debugGraph[d].fontcolor = beliefGraph[currVertex].fontcolor;
+    debugGraph[d].color = beliefGraph[currVertex].color;
+    debugGraph[d].label = std::to_string(currVertex) + "\n" + std::to_string(completeGraphMap.find(currVertex)->second) + "\n" + std::to_string(std::round(costs[currVertex] * 100) / 100).substr(0, 4);
+    debugGraph[d].pos = beliefGraph[currVertex].pos;
+
+    // add all adjacent vertices to debug_graph
+    Graph::adjacency_iterator it_, end_;
+    std::tie(it_, end_) = boost::adjacent_vertices(currVertex, beliefGraph);
+    for (; it_ != end_; it_++) {
+        VertexTrait d_n = add_vertex(debugGraph);
+        debugGraph[d_n].state = beliefGraph[it_.dereference()].state;
+        debugGraph[d_n].fontcolor = beliefGraph[it_.dereference()].fontcolor;
+        debugGraph[d_n].color = beliefGraph[it_.dereference()].color;
+        debugGraph[d_n].label = std::to_string(it_.dereference()) + "\n" + std::to_string(completeGraphMap.find(it_.dereference())->second) + "\n" + std::to_string(std::round(costs[it_.dereference()] * 100) / 100).substr(0, 4);
+        debugGraph[d_n].pos = beliefGraph[it_.dereference()].pos;
+
+        double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
+        if (boost::edge(currVertex, it_.dereference(), beliefGraph).second && beliefGraph[boost::edge(currVertex, it_.dereference(), beliefGraph).first].isWorldConnection) {
+            if (std::find(beliefGraph[currVertex].beliefChildren.begin(), beliefGraph[currVertex].beliefChildren.end(), it_.dereference()) != beliefGraph[currVertex].beliefChildren.end()) {
+                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+                EdgeTraitD d_e_n = d_p_n.first;
+                debugGraph[d_e_n].color = "red";
+                debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+            } else {
+                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, debugGraph);
+                EdgeTraitD d_e_n = d_p_n.first;
+                debugGraph[d_e_n].color = "red";
+                debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+            }
+
+        }
+        else {
+            std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
+            EdgeTraitD d_e_n = d_p_n.first;
+            debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+        }
+    }
+
+    // recursively construct the path tree
+    constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{}, d);
+
+    std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
+    timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
+
+    // save debug graph and path tree
+    if (extendedOutput) {
+        saveGraph(pathTree, "path", true, true);
+        saveGraph(debugGraph, "debug", true, false);
+        saveGraph(pathTree, "path_no_pos", true, false);
+        saveGraph(debugGraph, "debug_pos", true, true);
+    }
+
+    // save belief graph including costs
+    if (extendedOutput) {
+        for (VertexTrait vt: boost::make_iterator_range(vertices(beliefGraph))) {
+            beliefGraph[vt].label =
+                    std::to_string(vt) + "\n" + std::to_string(std::round(costs[vt] * 100) / 100).substr(0, 4);
+        }
+        for (EdgeTrait et: boost::make_iterator_range(edges(beliefGraph))) {
+            beliefGraph[et].label = std::to_string(std::round(
+                    si_->getStateSpace()->distanceBase(beliefGraph[et.m_source].state, beliefGraph[et.m_target].state,
+                                                       2) * 100) / 100).substr(0, 4);
+        }
+        saveGraph(beliefGraph, "costs", true, false);
+    }
+
+    // print worlds
+    if (extendedOutput) {
+        std::cout << "Worlds: ";
+        int c = 0;
+        for (std::vector<base::ObjectState> w: world->getWorldStates()) {
+            std::cout << c << ": ";
+            world->printStateFromInt(world->getStateIntFromObjectState(w));
+            std::cout << "\n";
+            c++;
+        }
+    }
+
+    pathExtraction();
+
+    std::chrono::steady_clock::time_point t_total_end = std::chrono::steady_clock::now();
+    timeTotal = (std::chrono::duration_cast<std::chrono::milliseconds>(t_total_end - t_total_start).count()) / 1000.0;
+
+    // if state 0 has infinite costs, no solution has been found
+    if (costs[0] == std::numeric_limits<double>::infinity()) {
+        return base::PlannerStatus::TIMEOUT;
+    }
+
+    std::cout << std::endl << std::endl;
+    std::cout << "Number of sampled states: " << static_cast<int>(randomGraph.m_vertices.size()) << std::endl;
+    std::cout << "Number of beliefs: " << static_cast<int>(world->getAllBeliefStates().size()) << std::endl;
+    std::cout << "Total time: " << timeTotal << "s" << std::endl;
+    std::cout << "Sampling time: " << timeSampling << "s" << std::endl;
+    std::cout << "Check motion time: " << timeCheckMotion << "s" << std::endl;
+    std::cout << "Belief graph creation time: " << timeBeliefGraph << "s" << std::endl;
+    std::cout << "Policy extraction time: " << timePolicyExtraction << "s" << std::endl;
+    std::cout << "Optimal path tree creation time: " << timeOptimalPathTree << "s" << std::endl;
+    std::cout << std::endl << std::endl;
+
+    if (static_cast<int>(distancesDirect.size()) > 0) {std::cout << "Distances:" << std::endl;}
+    int disIdx = 0;
+    for (int i = 0; i < static_cast<int>(distancesDirect.size()); i++) {
+        std::cout << "----- Goal State " << disIdx << " -----" << std::endl;
+        std::cout << "Distance of planned path: " << distancesPlanned.at(i) << std::endl;
+        std::cout << "Optimal distance without collision: " << distancesDirect.at(i) << std::endl;
+        disIdx++;
+    }
+    std::cout << std::endl << std::endl;
+
+    return base::PlannerStatus::EXACT_SOLUTION;
+}
+
+ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(const ompl::base::PlannerTerminationCondition &ptc) {
     // create random graph
     Graph randomGraph;
     std::vector<VertexTrait> randomGraphVertices;
@@ -172,15 +290,15 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             sampler_->sampleGoodCameraPositionNear(rstate, pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[0], pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[1]);
             sampledIdx++;
         }
-        // sample the goal state
+            // sample the goal state
         else if ((goal_s != nullptr) && rValue < goalBias_ && goal_s->canSample()) {
             goal_s->sampleGoal(rstate);
         }
-        // sample uniformly
+            // sample uniformly
         else if (rValue < (goalBias_ + 0.2)) {
             sampler_->sampleUniform(rstate);
         }
-        // sample uniformly, looking towards the goal
+            // sample uniformly, looking towards the goal
         else {
             sampler_->sampleGoodCameraPosition(rstate);
         }
@@ -268,7 +386,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                             std::vector<int> vals = randomGraph[e].worldValidities;
 
                         }
-                        // push back valid world idx to random graph edge
+                            // push back valid world idx to random graph edge
                         else {
                             int edgeIdx = 0;
                             for (; edgeIdx < static_cast<int>(randomGraphEdges.size()); edgeIdx++) {
@@ -321,6 +439,15 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         saveGraph(randomGraph, "random", false, true);
     }
 
+    // clear memory
+    if (rmotion->state != nullptr)
+        si_->freeState(rmotion->state);
+    delete rmotion;
+
+    return randomGraph;
+}
+
+ompl::geometric::Partial::Graph ompl::geometric::Partial::createBeliefGraph(Graph randomGraph) {
     std::chrono::steady_clock::time_point t_belief_start = std::chrono::steady_clock::now();
 
     // create belief graph
@@ -328,6 +455,20 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     Graph beliefGraph;
     std::vector<VertexTrait> beliefGraphVertices[static_cast<int>(beliefStates.size())];
     std::vector<VertexTrait> allBeliefGraphVertices;
+
+    // extract random graph vertices
+    std::vector<VertexTrait> randomGraphVertices;
+    Graph::vertex_iterator vi, vi_end;
+    for (boost::tie(vi, vi_end) = boost::vertices(randomGraph); vi != vi_end; ++vi) {
+        randomGraphVertices.push_back(*vi);
+    }
+
+    // extract random graph edges
+    std::vector<EdgeTrait> randomGraphEdges;
+    Graph::edge_iterator ei, ei_end;
+    for (boost::tie(ei, ei_end) = boost::edges(randomGraph); ei != ei_end; ++ei) {
+        randomGraphEdges.push_back(*ei);
+    }
 
     // create belief graphs containing only vertices of one belief
     Graph singleBeliefGraph[static_cast<int>(world->getAllBeliefStates().size())];
@@ -476,7 +617,16 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         saveGraph(beliefGraph, "belief_no_pos", true, false);
     }
 
+    return beliefGraph;
+}
+
+std::vector<double> ompl::geometric::Partial::calculateCosts(Graph beliefGraph) {
     std::chrono::steady_clock::time_point t_policy_start = std::chrono::steady_clock::now();
+    std::vector<VertexTrait> allBeliefGraphVertices;
+    Graph::vertex_iterator vi, vi_end;
+    for (boost::tie(vi, vi_end) = boost::vertices(beliefGraph); vi != vi_end; ++vi) {
+        allBeliefGraphVertices.push_back(*vi);
+    }
 
     // policy extraction
     std::priority_queue<std::pair<double, VertexTrait>, std::vector<std::pair<double, VertexTrait>>, std::greater<std::pair<double, VertexTrait>>> pq;
@@ -487,7 +637,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
             costs.push_back(0);
             pq.push(std::make_pair(0, v));
         }
-        // all other states have inf costs
+            // all other states have inf costs
         else {
             costs.push_back(std::numeric_limits<double>::infinity());
         }
@@ -516,7 +666,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
                     newCost = distance + costs[v];
                 }
             }
-            // if edge is connection between beliefs
+                // if edge is connection between beliefs
             else {
                 std::vector<int> children = beliefGraph[parent].beliefChildren;
                 if (children.empty()) {
@@ -575,351 +725,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         }
     }
 
-    std::chrono::steady_clock::time_point t_pathTree_start = std::chrono::steady_clock::now();
-
-    // create optimal path tree
-    VertexTrait currVertex = 0;
-    VertexTrait v = add_vertex(pathTree);
-    pathTree[v].state = beliefGraph[currVertex].state;
-    pathTree[v].fontcolor = beliefGraph[currVertex].fontcolor;
-    pathTree[v].finalSateIdx = beliefGraph[currVertex].finalSateIdx;
-    pathTree[v].color = beliefGraph[currVertex].color;
-    pathTree[v].beliefState = beliefGraph[currVertex].beliefState;
-    pathTree[v].label = beliefGraph[currVertex].label;
-    pathTree[v].observableObjects = beliefGraph[currVertex].observableObjects;
-    pathTree[v].pos = beliefGraph[currVertex].pos;
-
-    // create a debug graph for visualizing the path tree including the costs of vertices and edge + all adjacent vertices
-    VertexTrait d = add_vertex(debugGraph);
-    debugGraph[d].state = beliefGraph[currVertex].state;
-    debugGraph[d].fontcolor = beliefGraph[currVertex].fontcolor;
-    debugGraph[d].color = beliefGraph[currVertex].color;
-    debugGraph[d].label = std::to_string(currVertex) + "\n" + std::to_string(completeGraphMap.find(currVertex)->second) + "\n" + std::to_string(std::round(costs[currVertex] * 100) / 100).substr(0, 4);
-    debugGraph[d].pos = beliefGraph[currVertex].pos;
-
-    // add all adjacent vertices to debug_graph
-    Graph::adjacency_iterator it_, end_;
-    std::tie(it_, end_) = boost::adjacent_vertices(currVertex, beliefGraph);
-    for (; it_ != end_; it_++) {
-        VertexTrait d_n = add_vertex(debugGraph);
-        debugGraph[d_n].state = beliefGraph[it_.dereference()].state;
-        debugGraph[d_n].fontcolor = beliefGraph[it_.dereference()].fontcolor;
-        debugGraph[d_n].color = beliefGraph[it_.dereference()].color;
-        debugGraph[d_n].label = std::to_string(it_.dereference()) + "\n" + std::to_string(completeGraphMap.find(it_.dereference())->second) + "\n" + std::to_string(std::round(costs[it_.dereference()] * 100) / 100).substr(0, 4);
-        debugGraph[d_n].pos = beliefGraph[it_.dereference()].pos;
-
-        double dis = si_->getStateSpace()->distanceBase(debugGraph[d].state, debugGraph[d_n].state, 2);
-        if (boost::edge(currVertex, it_.dereference(), beliefGraph).second && beliefGraph[boost::edge(currVertex, it_.dereference(), beliefGraph).first].isWorldConnection) {
-            if (std::find(beliefGraph[currVertex].beliefChildren.begin(), beliefGraph[currVertex].beliefChildren.end(), it_.dereference()) != beliefGraph[currVertex].beliefChildren.end()) {
-                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
-                EdgeTraitD d_e_n = d_p_n.first;
-                debugGraph[d_e_n].color = "red";
-                debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
-            } else {
-                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, debugGraph);
-                EdgeTraitD d_e_n = d_p_n.first;
-                debugGraph[d_e_n].color = "red";
-                debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
-            }
-
-        }
-        else {
-            std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, debugGraph);
-            EdgeTraitD d_e_n = d_p_n.first;
-            debugGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
-        }
-    }
-
-    // recursively construct the path tree
-    constructPathTree(beliefGraph, costs, v, currVertex, std::set<VertexTrait>{}, d);
-
-    // visualizing costs of vertices and edges of one vertex with all its surrounding vertices
-    if (false) {
-        GraphD tmpGraph;
-        VertexTrait vertex_num = 126;
-        VertexTrait d = add_vertex(tmpGraph);
-        tmpGraph[d].state = beliefGraph[vertex_num].state;
-        tmpGraph[d].fontcolor = "red";
-        tmpGraph[d].color = "red";
-        tmpGraph[d].label = std::to_string(vertex_num) + "\n" + std::to_string(completeGraphMap.find(vertex_num)->second) + "\n" + std::to_string(std::round(costs[vertex_num] * 100) / 100).substr(0, 4);
-        tmpGraph[d].pos = beliefGraph[vertex_num].pos;
-        Graph::adjacency_iterator a_it, a_end;
-        std::tie(a_it, a_end) = boost::adjacent_vertices(vertex_num, beliefGraph);
-        for (; a_it != a_end; a_it++) {
-            VertexTrait d_n = add_vertex(tmpGraph);
-            tmpGraph[d_n].state = beliefGraph[a_it.dereference()].state;
-            tmpGraph[d_n].fontcolor = beliefGraph[a_it.dereference()].fontcolor;
-            tmpGraph[d_n].color = beliefGraph[a_it.dereference()].color;
-            tmpGraph[d_n].label = std::to_string(a_it.dereference()) + "\n" + std::to_string(completeGraphMap.find(a_it.dereference())->second) + "\n" + std::to_string(std::round(costs[a_it.dereference()] * 100) / 100).substr(0, 4);
-            tmpGraph[d_n].pos = beliefGraph[a_it.dereference()].pos;
-
-            double dis = si_->getStateSpace()->distanceBase(tmpGraph[d].state, tmpGraph[d_n].state, 2);
-            if (boost::edge(vertex_num, a_it.dereference(), beliefGraph).second && beliefGraph[boost::edge(vertex_num, a_it.dereference(), beliefGraph).first].isWorldConnection) {
-                if (std::find(beliefGraph[vertex_num].beliefChildren.begin(), beliefGraph[vertex_num].beliefChildren.end(), a_it.dereference()) != beliefGraph[vertex_num].beliefChildren.end()) {
-                    std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, tmpGraph);
-                    EdgeTraitD d_e_n = d_p_n.first;
-                    tmpGraph[d_e_n].color = "red";
-                    tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
-                } else {
-                    std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, tmpGraph);
-                    EdgeTraitD d_e_n = d_p_n.first;
-                    tmpGraph[d_e_n].color = "red";
-                    tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
-                }
-
-            }
-            else {
-                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, tmpGraph);
-                EdgeTraitD d_e_n = d_p_n.first;
-                tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
-            }
-        }
-        saveGraph(tmpGraph, "188", true, false);
-    }
-
-    std::chrono::steady_clock::time_point t_pathTree_end = std::chrono::steady_clock::now();
-    timeOptimalPathTree = (std::chrono::duration_cast<std::chrono::milliseconds>(t_pathTree_end - t_pathTree_start).count()) / 1000.0;
-
-    // save debug graph and path tree
-    if (extendedOutput) {
-        saveGraph(pathTree, "path", true, true);
-        saveGraph(debugGraph, "debug", true, false);
-        saveGraph(pathTree, "path_no_pos", true, false);
-        saveGraph(debugGraph, "debug_pos", true, true);
-    }
-
-    // When a solution path is computed, save it here
-    std::vector<int> worldsSolved;
-    std::vector<int> worldsUnsolved;
-    int idx = 0;
-    for (Motion *s : solution) {
-        if (s != nullptr) {
-            worldsSolved.push_back(idx);
-            idx++;
-        } else {
-            worldsUnsolved.push_back(idx);
-        }
-    }
-    if (!worldsSolved.empty()) {
-        std::cout << std::endl << std::endl;
-        if (!worldsUnsolved.empty()) {
-            std::cout << "No solutions found for worlds ";
-            for (int i: worldsUnsolved) {
-                std::cout << i << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    // save belief graph including costs
-    if (extendedOutput) {
-        for (VertexTrait vt: boost::make_iterator_range(vertices(beliefGraph))) {
-            beliefGraph[vt].label =
-                    std::to_string(vt) + "\n" + std::to_string(std::round(costs[vt] * 100) / 100).substr(0, 4);
-        }
-        for (EdgeTrait et: boost::make_iterator_range(edges(beliefGraph))) {
-            beliefGraph[et].label = std::to_string(std::round(
-                    si_->getStateSpace()->distanceBase(beliefGraph[et.m_source].state, beliefGraph[et.m_target].state,
-                                                       2) * 100) / 100).substr(0, 4);
-        }
-        saveGraph(beliefGraph, "costs", true, false);
-    }
-
-    // return optimal path tree
-    std::vector<std::vector<float>> pWorlds;
-
-    // print worlds
-    if (extendedOutput) {
-        std::cout << "Worlds: ";
-        int c = 0;
-        for (std::vector<base::ObjectState> w: world->getWorldStates()) {
-            std::cout << c << ": ";
-            world->printStateFromInt(world->getStateIntFromObjectState(w));
-            std::cout << "\n";
-            c++;
-        }
-    }
-    // if state 0 has infinite costs, no solution has been found
-    if (costs[0] == std::numeric_limits<double>::infinity()) {
-        return base::PlannerStatus::TIMEOUT;
-    }
-    // return solution path
-    // iterate over all final states of the path tree
-    for (VertexTraitD v : pathTreeFinalStates) {
-        pWorlds.push_back(world->beliefToWorld(pathTree[v].beliefState));
-        pdef_->addSolutionIdx(world->getBeliefIdx(pathTree[v].beliefState));
-        double dis = 0;
-        std::vector<int> observationIdx;
-        int planIdx = pathTree[v].finalSateIdx;
-        if (extendedOutput) {
-            const auto *state3D =
-                    pathTree[v].state->as<ompl::base::RealVectorStateSpace::StateType>();
-            std::cout << "\nGoal satisfied with state " << v << ": [" << state3D->values[0] << ", "
-                      << state3D->values[1]
-                      << ", " << state3D->values[2] << "]" << " which is final state " << pathTree[v].finalSateIdx
-                      << std::endl;
-            std::cout << "Solution path in reversed order (form goal to start):" << std::endl;
-        }
-        auto path(std::make_shared<PathGeometric>(si_));
-        std::vector<base::State*> pathR;
-        VertexTraitD currNode = v;
-        int c = 0;
-        std::vector<base::BeliefState> stateBeliefs;
-        // add next vertex of the path tree to the path until path to the start state is found
-        while (currNode != 0) {
-            if (extendedOutput) {
-                std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
-                getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
-                std::cout << " with belief state ";
-                world->printBelief(pathTree[currNode].beliefState);
-                std::cout << std::endl;
-            }
-            pathR.push_back(pathTree[currNode].state);
-            stateBeliefs.push_back(pathTree[currNode].beliefState);
-            c++;
-            GraphD::in_edge_iterator it, end;
-            std::tie(it, end) = boost::in_edges(currNode, pathTree);
-            for (; it != end; it++) {
-                VertexTraitD nextNode = it->m_source;
-                EdgeTraitD e = it.dereference();
-                if (pathTree[e].color == "red") {
-                    observationIdx.push_back(c);
-                    pdef_->addObservationPoint(std::make_pair(pathTree[nextNode].state, pathTree[nextNode].observableObjects));
-                }
-                dis += si_->getStateSpace()->distanceBase(pathTree[currNode].state, pathTree[nextNode].state, 2);
-                currNode = nextNode;
-            }
-        }
-        // add start state to path
-        pathR.push_back(pathTree[currNode].state);
-        stateBeliefs.push_back(pathTree[currNode].beliefState);
-        if (extendedOutput) {
-            std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
-            getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
-            std::cout << " with belief state ";
-            world->printBelief(pathTree[currNode].beliefState);
-            std::cout << std::endl;
-        }
-
-        if (static_cast<int>(distancesPlanned.size()) > planIdx) {
-            distancesPlanned.at(planIdx) = dis;
-        }
-
-        // split path into segment between observation points
-        // allows path simplification for these segments
-        int numSegments = static_cast<int>(observationIdx.size()) + 1;
-        std::vector<std::shared_ptr<PathGeometric>> segments;
-        if (numSegments > 1) {
-            int i = static_cast<int>(pathR.size()) - 1;
-            int c = 0;
-            for (int segIdx = numSegments - 1; segIdx >= 0; segIdx--) {
-                auto sPath(std::make_shared<PathGeometric>(si_));
-                for (; i >= 0; ) {
-                    sPath->append(pathR[i]);
-                    if (segIdx > 0 && (static_cast<int>(pathR.size()) - 1 - observationIdx[segIdx - 1])  == c) {
-                        std::vector<int> compatibleWorld;
-                        for (float f : world->beliefToWorld(stateBeliefs[i+1])) {
-                            if (fabs(f) < 1e-3) {
-                                compatibleWorld.push_back(0);
-                            } else {
-                                compatibleWorld.push_back(1);
-                            }
-                        }
-                        int worldIdx = world->getStateIdx(compatibleWorld);
-                        pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
-                        world->setState(worldIdx);
-                        ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
-                                                                                              pdef_->getGoal(),
-                                                                                              pdef_->getOptimizationObjective());
-                        psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), sPath->getStateCount() * 50, sPath->getStateCount() * 50);
-
-                        segments.push_back(sPath);
-                        c++;
-                        i--;
-                        break;
-                    }
-                    // simplify the last segment
-                    else if (i == 0) {
-                        std::vector<int> compatibleWorld;
-                        for (float f : world->beliefToWorld(pathTree[v].beliefState)) {
-                            if (fabs(f) < 1e-3) {
-                                compatibleWorld.push_back(0);
-                            } else {
-                                compatibleWorld.push_back(1);
-                            }
-                        }
-                        int worldIdx = world->getStateIdx(compatibleWorld);
-                        pdef_->setGoalState(pathR[i/*static_cast<int>(pathR.size()) - 1 - i*/], std::numeric_limits<double>::epsilon());
-                        world->setState(worldIdx);
-                        ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
-                                                                                              pdef_->getGoal(),
-                                                                                              pdef_->getOptimizationObjective());
-                        psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 100, 100);
-
-                        segments.push_back(sPath);
-                    }
-                    c++;
-                    i--;
-                }
-            }
-
-            // put segments together
-            for (std::shared_ptr<PathGeometric> pathSeg : segments) {
-                if (extendedOutput) {std::cout << "Segment: " << std::endl;}
-                for (int i = 0; i < static_cast<int>(pathSeg->getStateCount()); i++) {
-                    if (extendedOutput) {getSpaceInformation()->getStateSpace()->printState(pathSeg->getState(i), std::cout);}
-                    path->append(pathSeg->getState(i));
-                }
-            }
-        }
-        else {
-            for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
-                path->append(pathR[i]);
-            }
-        }
-
-        // store the non-simplified graph
-        std::vector<base::State *> pathRaw;
-        for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
-            pathRaw.push_back(pathR[i]);
-        }
-
-        pdef_->addSolutionPath(path);
-        pdef_->addRawSolution(pathRaw);
-    }
-
-    pdef_->setPWorlds(pWorlds);
-
-    std::chrono::steady_clock::time_point t_total_end = std::chrono::steady_clock::now();
-    timeTotal = (std::chrono::duration_cast<std::chrono::milliseconds>(t_total_end - t_total_start).count()) / 1000.0;
-
-    std::cout << std::endl << std::endl;
-    std::cout << "Number of sampled states: " << static_cast<int>(randomGraphVertices.size()) << std::endl;
-    std::cout << "Number of beliefs: " << static_cast<int>(beliefStates.size()) << std::endl;
-    std::cout << "Total time: " << timeTotal << "s" << std::endl;
-    std::cout << "Sampling time: " << timeSampling << "s" << std::endl;
-    std::cout << "Check motion time: " << timeCheckMotion << "s" << std::endl;
-    std::cout << "Belief graph creation time: " << timeBeliefGraph << "s" << std::endl;
-    std::cout << "Policy extraction time: " << timePolicyExtraction << "s" << std::endl;
-    std::cout << "Optimal path tree creation time: " << timeOptimalPathTree << "s" << std::endl;
-    std::cout << std::endl << std::endl;
-
-    if (static_cast<int>(distancesDirect.size()) > 0) {std::cout << "Distances:" << std::endl;}
-    int disIdx = 0;
-    for (int i = 0; i < static_cast<int>(distancesDirect.size()); i++) {
-        std::cout << "----- Goal State " << disIdx << " -----" << std::endl;
-        std::cout << "Distance of planned path: " << distancesPlanned.at(i) << std::endl;
-        std::cout << "Optimal distance without collision: " << distancesDirect.at(i) << std::endl;
-        disIdx++;
-    }
-    std::cout << std::endl << std::endl;
-
-    // clear memory
-    if (rmotion->state != nullptr)
-        si_->freeState(rmotion->state);
-    delete rmotion;
-
-    return base::PlannerStatus::EXACT_SOLUTION;
+    return costs;
 }
 
 void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<double> costs, VertexTrait v, VertexTrait currVertex, std::set<VertexTrait> visited, VertexTrait d_v) {
@@ -1095,6 +901,200 @@ void ompl::geometric::Partial::constructPathTree(Graph beliefGraph, std::vector<
             break;
         }
     }
+}
+
+void ompl::geometric::Partial::pathExtraction() {
+    std::vector<std::vector<float>> pWorlds;
+    // return solution path
+    // iterate over all final states of the path tree
+    for (VertexTraitD v : pathTreeFinalStates) {
+        pWorlds.push_back(world->beliefToWorld(pathTree[v].beliefState));
+        pdef_->addSolutionIdx(world->getBeliefIdx(pathTree[v].beliefState));
+        double dis = 0;
+        std::vector<int> observationIdx;
+        int planIdx = pathTree[v].finalSateIdx;
+        if (extendedOutput) {
+            const auto *state3D =
+                    pathTree[v].state->as<ompl::base::RealVectorStateSpace::StateType>();
+            std::cout << "\nGoal satisfied with state " << v << ": [" << state3D->values[0] << ", "
+                      << state3D->values[1]
+                      << ", " << state3D->values[2] << "]" << " which is final state " << pathTree[v].finalSateIdx
+                      << std::endl;
+            std::cout << "Solution path in reversed order (form goal to start):" << std::endl;
+        }
+        auto path(std::make_shared<PathGeometric>(si_));
+        std::vector<base::State*> pathR;
+        VertexTraitD currNode = v;
+        int c = 0;
+        std::vector<base::BeliefState> stateBeliefs;
+        // add next vertex of the path tree to the path until path to the start state is found
+        while (currNode != 0) {
+            if (extendedOutput) {
+                std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
+                getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
+                std::cout << " with belief state ";
+                world->printBelief(pathTree[currNode].beliefState);
+                std::cout << std::endl;
+            }
+            pathR.push_back(pathTree[currNode].state);
+            stateBeliefs.push_back(pathTree[currNode].beliefState);
+            c++;
+            GraphD::in_edge_iterator it, end;
+            std::tie(it, end) = boost::in_edges(currNode, pathTree);
+            for (; it != end; it++) {
+                VertexTraitD nextNode = it->m_source;
+                EdgeTraitD e = it.dereference();
+                if (pathTree[e].color == "red") {
+                    observationIdx.push_back(c);
+                    pdef_->addObservationPoint(std::make_pair(pathTree[nextNode].state, pathTree[nextNode].observableObjects));
+                }
+                dis += si_->getStateSpace()->distanceBase(pathTree[currNode].state, pathTree[nextNode].state, 2);
+                currNode = nextNode;
+            }
+        }
+        // add start state to path
+        pathR.push_back(pathTree[currNode].state);
+        stateBeliefs.push_back(pathTree[currNode].beliefState);
+        if (extendedOutput) {
+            std::cout << "Append to path: State " << pathTree[currNode].label << ": ";
+            getSpaceInformation()->getStateSpace()->printState(pathTree[currNode].state, std::cout);
+            std::cout << " with belief state ";
+            world->printBelief(pathTree[currNode].beliefState);
+            std::cout << std::endl;
+        }
+
+        if (static_cast<int>(distancesPlanned.size()) > planIdx) {
+            distancesPlanned.at(planIdx) = dis;
+        }
+
+        // split path into segment between observation points
+        // allows path simplification for these segments
+        int numSegments = static_cast<int>(observationIdx.size()) + 1;
+        std::vector<std::shared_ptr<PathGeometric>> segments;
+        if (numSegments > 1) {
+            int i = static_cast<int>(pathR.size()) - 1;
+            int c = 0;
+            for (int segIdx = numSegments - 1; segIdx >= 0; segIdx--) {
+                auto sPath(std::make_shared<PathGeometric>(si_));
+                for (; i >= 0; ) {
+                    sPath->append(pathR[i]);
+                    if (segIdx > 0 && (static_cast<int>(pathR.size()) - 1 - observationIdx[segIdx - 1])  == c) {
+                        std::vector<int> compatibleWorld;
+                        for (float f : world->beliefToWorld(stateBeliefs[i+1])) {
+                            if (fabs(f) < 1e-3) {
+                                compatibleWorld.push_back(0);
+                            } else {
+                                compatibleWorld.push_back(1);
+                            }
+                        }
+                        int worldIdx = world->getStateIdx(compatibleWorld);
+                        pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
+                        world->setState(worldIdx);
+                        ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
+                                                                                              pdef_->getGoal(),
+                                                                                              pdef_->getOptimizationObjective());
+                        psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), sPath->getStateCount() * 50, sPath->getStateCount() * 50);
+
+                        segments.push_back(sPath);
+                        c++;
+                        i--;
+                        break;
+                    }
+                        // simplify the last segment
+                    else if (i == 0) {
+                        std::vector<int> compatibleWorld;
+                        for (float f : world->beliefToWorld(pathTree[v].beliefState)) {
+                            if (fabs(f) < 1e-3) {
+                                compatibleWorld.push_back(0);
+                            } else {
+                                compatibleWorld.push_back(1);
+                            }
+                        }
+                        int worldIdx = world->getStateIdx(compatibleWorld);
+                        pdef_->setGoalState(pathR[i/*static_cast<int>(pathR.size()) - 1 - i*/], std::numeric_limits<double>::epsilon());
+                        world->setState(worldIdx);
+                        ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
+                                                                                              pdef_->getGoal(),
+                                                                                              pdef_->getOptimizationObjective());
+                        psk.shortcutPath(static_cast<ompl::geometric::PathGeometric &>(*sPath), 100, 100);
+
+                        segments.push_back(sPath);
+                    }
+                    c++;
+                    i--;
+                }
+            }
+
+            // put segments together
+            for (std::shared_ptr<PathGeometric> pathSeg : segments) {
+                if (extendedOutput) {std::cout << "Segment: " << std::endl;}
+                for (int i = 0; i < static_cast<int>(pathSeg->getStateCount()); i++) {
+                    if (extendedOutput) {getSpaceInformation()->getStateSpace()->printState(pathSeg->getState(i), std::cout);}
+                    path->append(pathSeg->getState(i));
+                }
+            }
+        }
+        else {
+            for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
+                path->append(pathR[i]);
+            }
+        }
+
+        // store the non-simplified graph
+        std::vector<base::State *> pathRaw;
+        for (int i = static_cast<int>(pathR.size()) - 1; i >= 0; i--) {
+            pathRaw.push_back(pathR[i]);
+        }
+
+        pdef_->addSolutionPath(path);
+        pdef_->addRawSolution(pathRaw);
+    }
+
+    pdef_->setPWorlds(pWorlds);
+}
+
+void ompl::geometric::Partial::debugSingleVertex(Graph beliefGraph, VertexTrait v) {
+    // visualizing costs of vertices and edges of one vertex with all its surrounding vertices
+    GraphD tmpGraph;
+    VertexTrait vertex_num = v;
+    VertexTrait d = add_vertex(tmpGraph);
+    tmpGraph[d].state = beliefGraph[vertex_num].state;
+    tmpGraph[d].fontcolor = "red";
+    tmpGraph[d].color = "red";
+    tmpGraph[d].label = std::to_string(vertex_num) + "\n" + std::to_string(completeGraphMap.find(vertex_num)->second) + "\n" + std::to_string(std::round(costs[vertex_num] * 100) / 100).substr(0, 4);
+    tmpGraph[d].pos = beliefGraph[vertex_num].pos;
+    Graph::adjacency_iterator a_it, a_end;
+    std::tie(a_it, a_end) = boost::adjacent_vertices(vertex_num, beliefGraph);
+    for (; a_it != a_end; a_it++) {
+        VertexTrait d_n = add_vertex(tmpGraph);
+        tmpGraph[d_n].state = beliefGraph[a_it.dereference()].state;
+        tmpGraph[d_n].fontcolor = beliefGraph[a_it.dereference()].fontcolor;
+        tmpGraph[d_n].color = beliefGraph[a_it.dereference()].color;
+        tmpGraph[d_n].label = std::to_string(a_it.dereference()) + "\n" + std::to_string(completeGraphMap.find(a_it.dereference())->second) + "\n" + std::to_string(std::round(costs[a_it.dereference()] * 100) / 100).substr(0, 4);
+        tmpGraph[d_n].pos = beliefGraph[a_it.dereference()].pos;
+
+        double dis = si_->getStateSpace()->distanceBase(tmpGraph[d].state, tmpGraph[d_n].state, 2);
+        if (boost::edge(vertex_num, a_it.dereference(), beliefGraph).second && beliefGraph[boost::edge(vertex_num, a_it.dereference(), beliefGraph).first].isWorldConnection) {
+            if (std::find(beliefGraph[vertex_num].beliefChildren.begin(), beliefGraph[vertex_num].beliefChildren.end(), a_it.dereference()) != beliefGraph[vertex_num].beliefChildren.end()) {
+                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, tmpGraph);
+                EdgeTraitD d_e_n = d_p_n.first;
+                tmpGraph[d_e_n].color = "red";
+                tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+            } else {
+                std::pair<EdgeTraitD, bool> d_p_n = add_edge(d_n, d, tmpGraph);
+                EdgeTraitD d_e_n = d_p_n.first;
+                tmpGraph[d_e_n].color = "red";
+                tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+            }
+
+        }
+        else {
+            std::pair<EdgeTraitD, bool> d_p_n = add_edge(d, d_n, tmpGraph);
+            EdgeTraitD d_e_n = d_p_n.first;
+            tmpGraph[d_e_n].label = std::to_string(std::round(dis * 100) / 100).substr(0, 4);
+        }
+    }
+    saveGraph(tmpGraph, std::to_string(v), true, false);
 }
 
 void ompl::geometric::Partial::getPlannerData(base::PlannerData &data) const
