@@ -246,13 +246,26 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(cons
 
     // periodically check if ptc() returns true / the max number of iterations is reached
     std::chrono::steady_clock::time_point t_sampling_start = std::chrono::steady_clock::now();
-    int numIterations = pdef_->getIterations();
+
+    int numIterations;
     bool iterationTermination = false;
-    if (numIterations > 0) {
+    std::vector<int> benchmarkSetting = pdef_->getBenchmarkSettings();
+    // check if benchmark mode is active
+    if (!benchmarkSetting.empty()) {
+        numIterations = benchmarkSetting[1];
         iterationTermination = true;
+    } else {
+        numIterations = pdef_->getIterations();
+        if (numIterations > 0) {
+            iterationTermination = true;
+        }
     }
+
+    int iterationCount = 0;
     while (!(ptc() && !iterationTermination) && (numIterations > 0 || !iterationTermination)) {
         numIterations--;
+        iterationCount++;
+
         // sample world
         int sampledWorldIdx;
         if (sampledIdx <= world->getNumWorldStates()) {
@@ -430,6 +443,10 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(cons
         }
 
         randomGraphIdx++;
+
+        if (!benchmarkSetting.empty() && iterationCount > benchmarkSetting[0] && (iterationCount % benchmarkSetting[2] == 0)) {
+            saveRandomGraphComplete(randomGraph, "benchmarkIntermediateGraph_" + std::to_string(iterationCount));
+        }
     }
 
     std::chrono::steady_clock::time_point t_sampling_end = std::chrono::steady_clock::now();
@@ -1159,7 +1176,6 @@ void ompl::geometric::Partial::saveGraph(Graph g, std::string name, bool useLabe
 //    std::stringstream command;
 //    command << "neato -T png " << name << ".dot -o " << name << ".png";
 //    system(command.str().c_str());
-    std::cout << "Graph " << name << " saved." << std::endl;
 }
 
 void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLabels, bool usePos) {
@@ -1182,6 +1198,47 @@ void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLab
 //    std::stringstream command;
 //    command << "neato -T png " << name << ".dot -o " << name << ".png";
 //    system(command.str().c_str());
-    std::cout << "Graph " << name << " saved." << std::endl;
+}
+
+void ompl::geometric::Partial::saveRandomGraphComplete(Graph g, std::string name) {
+    std::ofstream dot_file(name + std::string(".dot"));
+    boost::dynamic_properties dp;
+
+    auto statesToDP = [&g, this](Graph ::vertex_descriptor const& v) {
+        auto& vd = g[v];
+        std::string s;
+        base::State* state = vd.state;
+        for (unsigned int i = 0; i < si_->getStateSpace()->getDimension(); ++i) {
+            s += std::to_string(static_cast<const base::RealVectorStateSpace::StateType *>(state)->values[i]) + " ";
+        }
+        return s;
+    };
+
+    auto observableObjectsToDP = [&g, this](Graph ::vertex_descriptor const& v) {
+        auto& vd = g[v];
+        std::string s;
+        std::vector<int> observableObjects = vd.observableObjects;
+        for (int objIdx : observableObjects) {
+            s += std::to_string(objIdx) + " ";
+        }
+        return s;
+    };
+
+    dp.property("state", boost::make_transform_value_property_map(statesToDP, get(boost::vertex_index, g)));
+    dp.property("observable", boost::make_transform_value_property_map(observableObjectsToDP, get(boost::vertex_index, g)));
+    dp.property("fontcolor", get(&VertexStruct::fontcolor, g));
+    dp.property("finalSateIdx", get(&VertexStruct::finalSateIdx, g));
+    dp.property("pos", get(&VertexStruct::pos, g));
+
+    boost::write_graphviz_dp(dot_file, g, dp);
+}
+
+ompl::geometric::Partial::Graph ompl::geometric::Partial::readRandomGraph(std::string name) {
+    std::ifstream dot_file(name + std::string(".dot"));
+    Graph g;
+
+    // TODO Parse the .dot file
+
+    dot_file.close();
 }
 

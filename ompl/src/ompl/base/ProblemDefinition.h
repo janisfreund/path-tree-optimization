@@ -494,6 +494,22 @@ namespace ompl
                 return maxIterations;
             }
 
+            void setBenchmarkSettings(std::vector<int> settings) {
+                benchmarkSetting = settings;
+            }
+
+            std::vector<int> getBenchmarkSettings() {
+                return benchmarkSetting;
+            }
+
+            void addBenchmarkSolutionCosts(double costs) {
+                benchmarkSolutionCosts.push_back(costs);
+            }
+
+            std::vector<double> getBenchmarkSolutionCosts() {
+                return benchmarkSolutionCosts;
+            }
+
         protected:
             /** \brief Helper function for fixInvalidInputStates(). Attempts to fix an individual state */
             bool fixInvalidInputState(State *state, double dist, bool start, unsigned int attempts);
@@ -529,6 +545,10 @@ namespace ompl
             int mode;
             int seed = -1;
             int maxIterations = -1;
+
+            // for benchmarking <minIterations, maxIterations, stepSize>
+            std::vector<int> benchmarkSetting;
+            std::vector<double> benchmarkSolutionCosts;
 
             std::vector<std::vector<float>> pWorlds;
             std::vector<std::vector<State *>> solutionsRaw;

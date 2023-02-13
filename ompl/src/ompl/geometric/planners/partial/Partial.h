@@ -16,7 +16,7 @@
 #include <boost/config.hpp>
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
-//#include <boost/graph/graphviz.hpp>
+#include <boost/graph/graphviz.hpp>
 #include <chrono>
 
 namespace ompl
@@ -162,6 +162,8 @@ namespace ompl
 
             void saveGraph(Graph g, std::string name, bool useLabels, bool usePos);
             void saveGraph(GraphD g, std::string name, bool useLabels, bool usePos);
+            void saveRandomGraphComplete(Graph g, std::string name);
+            Graph readRandomGraph(std::string name);
 
             void setSeed(int seed) {
                 rng_.setLocalSeed(seed);
