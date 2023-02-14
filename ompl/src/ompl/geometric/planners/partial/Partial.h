@@ -16,7 +16,7 @@
 #include <boost/config.hpp>
 #include "boost/graph/graph_traits.hpp"
 #include "boost/graph/adjacency_list.hpp"
-#include <boost/graph/graphviz.hpp>
+//#include <boost/graph/graphviz.hpp>
 #include <chrono>
 
 namespace ompl
@@ -143,7 +143,7 @@ namespace ompl
             typedef boost::graph_traits<GraphD>::vertex_descriptor VertexTraitD;
             typedef boost::graph_traits<GraphD>::edge_descriptor EdgeTraitD;
 
-            Graph createRandomGraph(const ompl::base::PlannerTerminationCondition &ptc);
+            std::vector<Graph> createRandomGraph(const ompl::base::PlannerTerminationCondition &ptc);
 
             Graph createBeliefGraph(Graph randomGraph);
 

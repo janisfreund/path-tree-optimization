@@ -52,9 +52,19 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
         rng_.setLocalSeed(0);
     }
 
-    Graph randomGraph = createRandomGraph(ptc);
+    std::vector<Graph> randomGraph = createRandomGraph(ptc);
 
-    Graph beliefGraph = createBeliefGraph(randomGraph);
+    if (!pdef_->getBenchmarkSettings().empty()) {
+        // benchmark mode
+        for (const Graph& randGraph : randomGraph) {
+            Graph beliefGraph = createBeliefGraph(randGraph);
+            std::vector<double> c = calculateCosts(beliefGraph);
+            pdef_->addBenchmarkSolutionCosts(c[0]);
+        }
+        return base::PlannerStatus::TIMEOUT;
+    }
+
+    Graph beliefGraph = createBeliefGraph(randomGraph[0]);
 
     std::vector<double> costs = calculateCosts(beliefGraph);
 
@@ -164,7 +174,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     }
 
     std::cout << std::endl << std::endl;
-    std::cout << "Number of sampled states: " << static_cast<int>(randomGraph.m_vertices.size()) << std::endl;
+    std::cout << "Number of sampled states: " << static_cast<int>(randomGraph[0].m_vertices.size()) << std::endl;
     std::cout << "Number of beliefs: " << static_cast<int>(world->getAllBeliefStates().size()) << std::endl;
     std::cout << "Total time: " << timeTotal << "s" << std::endl;
     std::cout << "Sampling time: " << timeSampling << "s" << std::endl;
@@ -187,7 +197,7 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
     return base::PlannerStatus::EXACT_SOLUTION;
 }
 
-ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(const ompl::base::PlannerTerminationCondition &ptc) {
+std::vector<ompl::geometric::Partial::Graph> ompl::geometric::Partial::createRandomGraph(const ompl::base::PlannerTerminationCondition &ptc) {
     // create random graph
     Graph randomGraph;
     std::vector<VertexTrait> randomGraphVertices;
@@ -261,6 +271,7 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(cons
         }
     }
 
+    std::vector<Graph> intermediateRandomGraphs;
     int iterationCount = 0;
     while (!(ptc() && !iterationTermination) && (numIterations > 0 || !iterationTermination)) {
         numIterations--;
@@ -318,6 +329,11 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(cons
 
         // check if sampled state is valid in sampled world
         if (!si_->isValid(rstate, world)) {
+            if (!benchmarkSetting.empty() && iterationCount >= benchmarkSetting[0] && ((iterationCount + benchmarkSetting[0]) % benchmarkSetting[2] == 0)) {
+                Graph g;
+                boost::copy_graph(randomGraph, g);
+                intermediateRandomGraphs.push_back(g);
+            }
             continue;
         }
 
@@ -444,8 +460,10 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(cons
 
         randomGraphIdx++;
 
-        if (!benchmarkSetting.empty() && iterationCount > benchmarkSetting[0] && (iterationCount % benchmarkSetting[2] == 0)) {
-            saveRandomGraphComplete(randomGraph, "benchmarkIntermediateGraph_" + std::to_string(iterationCount));
+        if (!benchmarkSetting.empty() && iterationCount >= benchmarkSetting[0] && ((iterationCount + benchmarkSetting[0]) % benchmarkSetting[2] == 0)) {
+            Graph g;
+            boost::copy_graph(randomGraph, g);
+            intermediateRandomGraphs.push_back(g);
         }
     }
 
@@ -461,7 +479,11 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createRandomGraph(cons
         si_->freeState(rmotion->state);
     delete rmotion;
 
-    return randomGraph;
+    if (pdef_->getBenchmarkSettings().empty()) {
+        return std::vector<Graph>{randomGraph};
+    } else{
+        return intermediateRandomGraphs;
+    }
 }
 
 ompl::geometric::Partial::Graph ompl::geometric::Partial::createBeliefGraph(Graph randomGraph) {
@@ -638,6 +660,7 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createBeliefGraph(Grap
 }
 
 std::vector<double> ompl::geometric::Partial::calculateCosts(Graph beliefGraph) {
+    costs.clear();
     std::chrono::steady_clock::time_point t_policy_start = std::chrono::steady_clock::now();
     std::vector<VertexTrait> allBeliefGraphVertices;
     Graph::vertex_iterator vi, vi_end;
@@ -1201,44 +1224,44 @@ void ompl::geometric::Partial::saveGraph(GraphD g, std::string name, bool useLab
 }
 
 void ompl::geometric::Partial::saveRandomGraphComplete(Graph g, std::string name) {
-    std::ofstream dot_file(name + std::string(".dot"));
-    boost::dynamic_properties dp;
-
-    auto statesToDP = [&g, this](Graph ::vertex_descriptor const& v) {
-        auto& vd = g[v];
-        std::string s;
-        base::State* state = vd.state;
-        for (unsigned int i = 0; i < si_->getStateSpace()->getDimension(); ++i) {
-            s += std::to_string(static_cast<const base::RealVectorStateSpace::StateType *>(state)->values[i]) + " ";
-        }
-        return s;
-    };
-
-    auto observableObjectsToDP = [&g, this](Graph ::vertex_descriptor const& v) {
-        auto& vd = g[v];
-        std::string s;
-        std::vector<int> observableObjects = vd.observableObjects;
-        for (int objIdx : observableObjects) {
-            s += std::to_string(objIdx) + " ";
-        }
-        return s;
-    };
-
-    dp.property("state", boost::make_transform_value_property_map(statesToDP, get(boost::vertex_index, g)));
-    dp.property("observable", boost::make_transform_value_property_map(observableObjectsToDP, get(boost::vertex_index, g)));
-    dp.property("fontcolor", get(&VertexStruct::fontcolor, g));
-    dp.property("finalSateIdx", get(&VertexStruct::finalSateIdx, g));
-    dp.property("pos", get(&VertexStruct::pos, g));
-
-    boost::write_graphviz_dp(dot_file, g, dp);
+//    std::ofstream dot_file(name + std::string(".dot"));
+//    boost::dynamic_properties dp;
+//
+//    auto statesToDP = [&g, this](Graph ::vertex_descriptor const& v) {
+//        auto& vd = g[v];
+//        std::string s;
+//        base::State* state = vd.state;
+//        for (unsigned int i = 0; i < si_->getStateSpace()->getDimension(); ++i) {
+//            s += std::to_string(static_cast<const base::RealVectorStateSpace::StateType *>(state)->values[i]) + " ";
+//        }
+//        return s;
+//    };
+//
+//    auto observableObjectsToDP = [&g, this](Graph ::vertex_descriptor const& v) {
+//        auto& vd = g[v];
+//        std::string s;
+//        std::vector<int> observableObjects = vd.observableObjects;
+//        for (int objIdx : observableObjects) {
+//            s += std::to_string(objIdx) + " ";
+//        }
+//        return s;
+//    };
+//
+//    dp.property("state", boost::make_transform_value_property_map(statesToDP, get(boost::vertex_index, g)));
+//    dp.property("observable", boost::make_transform_value_property_map(observableObjectsToDP, get(boost::vertex_index, g)));
+//    dp.property("fontcolor", get(&VertexStruct::fontcolor, g));
+//    dp.property("finalSateIdx", get(&VertexStruct::finalSateIdx, g));
+//    dp.property("pos", get(&VertexStruct::pos, g));
+//
+//    boost::write_graphviz_dp(dot_file, g, dp);
 }
 
 ompl::geometric::Partial::Graph ompl::geometric::Partial::readRandomGraph(std::string name) {
-    std::ifstream dot_file(name + std::string(".dot"));
-    Graph g;
-
-    // TODO Parse the .dot file
-
-    dot_file.close();
+//    std::ifstream dot_file(name + std::string(".dot"));
+//    Graph g;
+//
+//    // TODO Parse the .dot file
+//
+//    dot_file.close();
 }
 
