@@ -1028,6 +1028,9 @@ void ompl::geometric::Partial::pathExtraction() {
                             }
                         }
                         int worldIdx = world->getStateIdx(compatibleWorld);
+                        if (pdef_->getMode() == 1) {
+                            worldIdx = pathTree[v].finalSateIdx;
+                        }
                         pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
                         world->setState(worldIdx);
                         ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
