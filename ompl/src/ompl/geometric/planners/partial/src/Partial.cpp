@@ -656,6 +656,10 @@ ompl::geometric::Partial::Graph ompl::geometric::Partial::createBeliefGraph(Grap
         saveGraph(beliefGraph, "belief_no_pos", true, false);
     }
 
+    if (allBeliefGraphVertices.empty()) {
+        add_vertex(beliefGraph);
+    }
+
     return beliefGraph;
 }
 
