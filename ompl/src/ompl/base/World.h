@@ -27,7 +27,7 @@ namespace ompl
             World() {}
 
             /** \brief Constructor */
-            World(int numObjects, bool changeableFinalStates, BeliefState initBelief);
+            World(int numObjects, bool changeableFinalStates, BeliefState initBelief, bool excludeFullWorld);
 
             /** \brief Destructor */
             virtual ~World() = default;
@@ -50,6 +50,14 @@ namespace ompl
             /** \brief set world state */
             void setState(int idx) {
                 objectStates_ = worldStates_.at(idx);
+            }
+
+            void setFullWorldState() {
+                std::vector<ObjectState> os;
+                for (int i = 0; i < numObjects_; i++) {
+                    os.push_back(EXISTENT);
+                }
+                objectStates_ = os;
             }
 
             /** \brief get world state */
@@ -169,7 +177,7 @@ namespace ompl
 
         private:
             /** \brief fills worldStates_ with all possible combinations of objects states */
-            void generateCombinations(std::vector<ObjectState> combination, int len, int index);
+            void generateCombinations(std::vector<ObjectState> combination, int len, int index, bool excludeFullWorld);
 
             /** \brief get world indices in which an object DOESN'T have a certain object state */
             std::set<int> getNegativeWorldIndices(int objIndx, ObjectState state);

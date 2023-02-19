@@ -202,11 +202,15 @@ namespace ompl
             void setStateValidityAndTargetChecker(const StateValidityWorldCheckerFn &svc, const TargetCheckerFn &tc, World *world);
 
             void initWorld(int numObjects, bool changeableFinalStates) {
-                world_ = new World(numObjects, changeableFinalStates, std::vector<float>{});
+                world_ = new World(numObjects, changeableFinalStates, std::vector<float>{}, false);
             }
 
-            void initWorld(int numObjects, bool changeableFinalStates, std::vector<float> initBelief) {
-                world_ = new World(numObjects, changeableFinalStates, initBelief);
+            void initWorld(int numObjects, bool changeableFinalStates, bool excludeFullWorld) {
+                world_ = new World(numObjects, changeableFinalStates, std::vector<float>{}, excludeFullWorld);
+            }
+
+            void initWorld(int numObjects, bool changeableFinalStates, std::vector<float> initBelief, bool excludeFullWorld) {
+                world_ = new World(numObjects, changeableFinalStates, initBelief, excludeFullWorld);
             }
 
             World* getWorld() {

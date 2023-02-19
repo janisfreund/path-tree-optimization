@@ -4,8 +4,7 @@
 
 #include "ompl/base/World.h"
 
-ompl::base::World::World(int numObjects, bool changeableFinalStates, BeliefState initBelief) {
-    std::cout << "New world set." << std::endl;
+ompl::base::World::World(int numObjects, bool changeableFinalStates, BeliefState initBelief, bool excludeFullWorld) {
     numObjects_ = numObjects;
 
     // fill worldStates with all possible combinations
@@ -22,7 +21,7 @@ ompl::base::World::World(int numObjects, bool changeableFinalStates, BeliefState
             worldStates_.push_back(ws);
         }
     } else {
-        generateCombinations(std::vector<ObjectState>{}, numObjects, 0);
+        generateCombinations(std::vector<ObjectState>{}, numObjects, 0, excludeFullWorld);
     }
 
     std::vector<float> initialBelief;
@@ -66,9 +65,17 @@ std::vector<ompl::base::BeliefState> ompl::base::World::observe(BeliefState oldB
     return std::vector<std::vector<float>>{oldBeliefs};
 }
 
-void ompl::base::World::generateCombinations(std::vector<ObjectState> combination, int len, int index) {
+void ompl::base::World::generateCombinations(std::vector<ObjectState> combination, int len, int index, bool excludeFullWorld) {
     if (len == index) {
-        worldStates_.push_back(combination);
+        bool isFull = true;
+        for (ObjectState objectState : combination) {
+            if (objectState == NONEXISTENT) {
+                isFull = false;
+            }
+        }
+        if (!excludeFullWorld || !isFull) {
+            worldStates_.push_back(combination);
+        }
         return;
     }
 
@@ -76,7 +83,7 @@ void ompl::base::World::generateCombinations(std::vector<ObjectState> combinatio
     for (int i = 0; i < 2; i++) {
         std::vector<ObjectState> comb(combination);
         comb.push_back(ObjectState(i));
-        generateCombinations(comb, len, index+1);
+        generateCombinations(comb, len, index+1, excludeFullWorld);
     }
 }
 

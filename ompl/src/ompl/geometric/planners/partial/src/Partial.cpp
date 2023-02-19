@@ -736,7 +736,7 @@ std::vector<double> ompl::geometric::Partial::calculateCosts(Graph beliefGraph) 
                     } else {
                         if (infCount != 0) {
                             // if mode==2: vertex is not inf if one of its belief children is not inf
-                            if (pdef_->getMode() == 2) {
+                            if (false /*pdef_->getMode() == 2*/) {
                                 double multiplier = 1 / (1 - infCount);
                                 newCost *= multiplier;
                             } else {
@@ -1036,7 +1036,11 @@ void ompl::geometric::Partial::pathExtraction() {
                             worldIdx = pathTree[v].finalSateIdx;
                         }
                         pdef_->setGoalState(pathR[i], std::numeric_limits<double>::epsilon());
-                        world->setState(worldIdx);
+                        if (worldIdx < world->getNumWorldStates()) {
+                            world->setState(worldIdx);
+                        } else {
+                            world->setFullWorldState();
+                        }
                         ompl::geometric::PathSimplifier psk = ompl::geometric::PathSimplifier(si_,
                                                                                               pdef_->getGoal(),
                                                                                               pdef_->getOptimizationObjective());
