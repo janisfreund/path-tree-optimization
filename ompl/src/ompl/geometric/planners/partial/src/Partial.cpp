@@ -372,8 +372,12 @@ std::vector<ompl::geometric::Partial::Graph> ompl::geometric::Partial::createRan
 
             // find the states in the tree within radius
             std::vector<Motion*> nmotionVec;
-            // TODO no fixed radius
-            nn_.at(worldIdx)->nearestR(rmotion, 0.5, nmotionVec);
+            // TODO make radius dependent on bounds
+            double radius = 0.5;
+            if (pdef_->getMode() == 2) {
+                radius = 2.0;
+            }
+            nn_.at(worldIdx)->nearestR(rmotion, radius, nmotionVec);
 
             // add nearest state if there is no state within the specified radius
             if (nmotionVec.empty()) {
