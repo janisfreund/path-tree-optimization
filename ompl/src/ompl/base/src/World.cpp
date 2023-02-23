@@ -4,7 +4,8 @@
 
 #include "ompl/base/World.h"
 
-ompl::base::World::World(int numObjects, bool changeableFinalStates, BeliefState initBelief, bool excludeFullWorld) {
+ompl::base::World::World(int numObjects, bool changeableFinalStates, std::vector<double> initBelief, bool excludeFullWorld) {
+    std::cout << "debug\n";
     numObjects_ = numObjects;
 
     // fill worldStates with all possible combinations
@@ -24,12 +25,14 @@ ompl::base::World::World(int numObjects, bool changeableFinalStates, BeliefState
         generateCombinations(std::vector<ObjectState>{}, numObjects, 0, excludeFullWorld);
     }
 
-    std::vector<float> initialBelief;
+    std::vector<float> initialBelief(getNumWorldStates());
     if (initBelief.empty()) {
         // initialize initial belief uniformly
         for (int i = 0; i < getNumWorldStates(); i++) {
-            initialBelief.push_back(1. / getNumWorldStates());
+            initialBelief.at(i) = static_cast<float>(1. / getNumWorldStates());
         }
+    } else {
+        std::transform(initBelief.begin(), initBelief.end(), initialBelief.begin(), [](double x) { return static_cast<float>(x);});
     }
     std::vector<int> initialObjects;
     for (int i = 0; i < getNumObjects(); i++) {

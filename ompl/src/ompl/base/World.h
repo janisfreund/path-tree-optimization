@@ -27,7 +27,7 @@ namespace ompl
             World() {}
 
             /** \brief Constructor */
-            World(int numObjects, bool changeableFinalStates, BeliefState initBelief, bool excludeFullWorld);
+            World(int numObjects, bool changeableFinalStates, std::vector<double> initBelief, bool excludeFullWorld);
 
             /** \brief Destructor */
             virtual ~World() = default;
