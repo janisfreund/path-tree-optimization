@@ -353,9 +353,6 @@ std::vector<ompl::geometric::Partial::Graph> ompl::geometric::Partial::createRan
 
         if (extendedOutput) {std::cout << "Sampled state: " << pos_str << std::endl;}
 
-        // TODO currently using camera image taken in a world in which all objects are present
-        world->setState(world->getNumWorldStates() - 1);
-
         // check which objects are observable from sampled state
         randomGraph[v].observableObjects = si_->targetFound(dstate);
 
