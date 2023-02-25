@@ -166,6 +166,8 @@ ompl::base::PlannerStatus ompl::geometric::Partial::solve(const ompl::base::Plan
 
     pathExtraction();
 
+    world->setState(world->getNumWorldStates() - 1);
+
     std::chrono::steady_clock::time_point t_total_end = std::chrono::steady_clock::now();
     timeTotal = (std::chrono::duration_cast<std::chrono::milliseconds>(t_total_end - t_total_start).count()) / 1000.0;
 
