@@ -314,8 +314,8 @@ std::vector<ompl::geometric::Partial::Graph> ompl::geometric::Partial::createRan
         double rValue = rng_.uniform01();
         // sample state at base starting position, looking towards the goal
         if (sampledIdx <= world->getNumWorldStates()) {
-//            sampler_->sampleGoodCameraPositionNear(rstate, pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[0], pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[1]);
-            sampler_->sampleGoodCameraPosition(rstate);
+            sampler_->sampleGoodCameraPositionNear(rstate, pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[0], pdef_->getStartState(0)->as<base::RealVectorStateSpace::StateType>()->values[1]);
+//            sampler_->sampleGoodCameraPosition(rstate);
             sampledIdx++;
         }
             // sample the goal state
@@ -373,7 +373,6 @@ std::vector<ompl::geometric::Partial::Graph> ompl::geometric::Partial::createRan
 
             // find the states in the tree within radius
             std::vector<Motion*> nmotionVec;
-            // TODO make radius dependent on bounds
             double radius = 0.5;
             if (pdef_->getMode() == 2) {
                 radius = 2.0;
@@ -1204,7 +1203,6 @@ void ompl::geometric::Partial::freeMemory()
             }
         }
     }
-    // TODO also delete graphs
 }
 
 // save graph as png
@@ -1288,8 +1286,6 @@ void ompl::geometric::Partial::saveRandomGraphComplete(Graph g, std::string name
 ompl::geometric::Partial::Graph ompl::geometric::Partial::readRandomGraph(std::string name) {
 //    std::ifstream dot_file(name + std::string(".dot"));
 //    Graph g;
-//
-//    // TODO Parse the .dot file
 //
 //    dot_file.close();
 }

@@ -78,7 +78,6 @@ namespace ompl
             }
 
             /** \brief get index of a given state of the world */
-            // TODO improve
             int getStateIdx(std::vector<int> worldState) {
                 int idx = 0;
                 for (std::vector<ObjectState> state : worldStates_) {
@@ -136,7 +135,6 @@ namespace ompl
                         idx++;
                     }
                 }
-                // TODO fails if not found
                 return idx;
             }
 

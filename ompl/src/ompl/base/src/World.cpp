@@ -94,7 +94,6 @@ void ompl::base::World::generateCombinations(std::vector<ObjectState> combinatio
 std::set<int> ompl::base::World::getNegativeWorldIndices(int objIndx, ObjectState state) {
     std::set<int> indices;
     for (int i = 0; i < getNumWorldStates(); i++) {
-        // TODO improve
         if (worldStates_.at(i).at(objIndx) != state) {
             indices.insert(i);
         }

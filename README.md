@@ -1,39 +1,50 @@
-The Open Motion Planning Library (OMPL)
-=======================================
+# Master Thesis: Asymptotically Optimal Belief Space Planning
 
-Linux [![Build Status](https://travis-ci.org/ompl/omplapp.svg?branch=master)](https://travis-ci.org/ompl/omplapp)
-Windows [![Build status](https://ci.appveyor.com/api/projects/status/dyu0y627hkp8tp6h/branch/master?svg=true)](https://ci.appveyor.com/project/mamoll/omplapp/branch/master)
+The code implemented as part of the thesis consists of two parts:
 
-This is OMPL.app, an extended version of OMPL that adds support for mesh
-loading and collision checking as well as a simple GUI.
+1. Implementation of the PTO planner in OMPL: https://github.com/janisfreund/thesis-ompl
+The code is a fork of https://github.com/ompl/omplapp.
 
-Visit the [OMPL.app installation page](http://ompl.kavrakilab.org/installation.html) for
-detailed installation instructions.
+2. Implementation of the simulation environment in PyBullet: https://github.com/janisfreund/thesis-pybullet
+The code builds on the OMPL/PyBullet Interface https://github.com/lyfkyle/pybullet_ompl.
 
-OMPL.app has the following required dependencies:
 
-* [Boost](https://www.boost.org) (version 1.58 or higher)
-* [CMake](https://www.cmake.org) (version 3.5 or higher)
-* [Eigen](http://eigen.tuxfamily.org) (version 3.3 or higher)
-* [Assimp](http://assimp.org) (version 3.0.1270 or higher)
-* [FCL](https://github.com/flexible-collision-library/fcl) (version 0.3.1 or higher)
+## OMPL
 
-The following dependencies are optional:
+### Installation
 
-* [PyQt](https://www.riverbankcomputing.co.uk/software/pyqt/download5) (for GUI)
-* [PyOpenGL](https://pyopengl.sourceforge.net/) (for GUI)
-* [Py++](https://bitbucket.org/ompl/ompl/src/tip/doc/markdown/installPyPlusPlus.md) (needed to generate Python bindings)
-* [ODE](http://ode.org) (needed to compile support for planning using the Open Dynamics Engine)
-* [Doxygen](http://www.doxygen.org) (needed to create a local copy of the documentation at
-  https://ompl.kavrakilab.org)
+First, both repositories have to be cloned to the same directory. OMPL can be installed by performing the following steps:
 
-Once dependencies are installed, you can build OMPL.app on Linux, macOS,
-and MS Windows. Go to the top-level directory of OMPL.app and type the
-following commands:
+1. Run the installation script provided by ompl: https://ompl.kavrakilab.org/install-ompl-ubuntu.sh using the command:`./install-ompl-ubuntu.sh --python`
+2. Create build directory in `./thesis-ompl` with `mkdir build` and go to the folder with `cd build`
+2. Generate Python bindings with `make -j 4 update_bindings`
+3. Compile with `make -j 4`
+4. Install required Python packages with `pip install pybullet numpy opencv-python scipy matplotlib progressbar`
 
-    mkdir -p build/Release
-    cd build/Release
-    cmake ../..
-    # next step is optional
-    make -j 4 update_bindings # if you want to use the GUI or Python bindings
-    make -j 4 # replace "4" with the number of cores on your machine
+### Relevant files
+The most relevant files for the thesis are:
+- `./thesis-ompl/ompl/src/ompl/geometric/planners/partial/Partial.h` and `./thesis-ompl/ompl/src/ompl/geometric/planners/partial/src/Partial.cpp` implement the PTO planner
+- `./thesis-ompl/ompl/src/ompl/base/World.h` and `./thesis-ompl/ompl/src/ompl/base/src/World.cpp` implement the world class
+
+
+## PyBullet
+
+The most relavant files are:
+- `./thesis-pybullet/pb_ompl.py`: Implements the interface to OMPL
+- `./thesis-pybullet/scripts/benchmarks.py`: Generates benchmark plots
+- `./thesis-pybullet/scripts/camera_state_sampler.py`: Implements the camera-based state sampler
+- `./thesis-pybullet/scripts/create_env_imgs.py`: Can be used to create images of environments
+- `./thesis-pybullet/scripts/demos.py`: Demos planned path trees
+- `./thesis-pybullet/scripts/environments.py`: Specifies the environments
+- `./thesis-pybullet/scripts/robots.py`: Defines the robots
+- `./thesis-pybullet/scripts/test_environments.py`: Tests specific robot configurations in specified environmnets
+
+Models of the robots and environments are stored in the directory `./thesis-pybullet/models`.
+This includes models from the following sources:
+- https://github.com/AutonomyLab/create_robot
+- https://www.turbosquid.com/de/3d-models/3d-model-golden-retriever-1850419
+- https://www.turbosquid.com/de/3d-models/3d-model-lowpoy-suv-car-1937266
+- https://sketchfab.com/3d-models/isometric-office-d31464eed8044190911b221648aca432
+- https://sketchfab.com/3d-models/floor-plan-with-furniture-813f854c770b4678a616a9ebf7534fe6
+- https://www.turbosquid.com/de/3d-models/bookshelf-for-low-poly-games-3d-model-1860043
+- https://www.turbosquid.com/de/3d-models/3d-industrial-shed-warehouse-building-1603744
